@@ -95,7 +95,7 @@ function App() {
      
      const gltfloader = new GLTFLoader()
     //  gltfloader.setDRACOLoader(dracoLoader)
-     const ground ;
+     let ground ;
      gltfloader.load(
       '/assets/model/xiaomi.glb', 
       (gltf) => {
@@ -121,9 +121,12 @@ function App() {
                 roughness: 0 // 粗糙度
               });
               child.material.needsUpdate = true;
+              // ground = child
             }
-            child.material.side = THREE.FrontSide
-            ground = child
+            if(child.name == "ground"){
+            child.material.side = THREE.DoubleSide
+              ground = child
+            }
             // child.material.side = THREE.DoubleSide
             // child.visible = true
           }
@@ -155,7 +158,7 @@ function App() {
     
     const cubeRenderTarget =  new THREE.WebGLCubeRenderTarget(2048);
     const cubeCamera = new THREE.CubeCamera(0.01, 100, cubeRenderTarget)
-    cubeCamera.position.set(0, 0.01, 0)
+    cubeCamera.position.set(0, 0, 0)
     // 控制器设置 - 暂时禁用 OrbitControls，使用手动控制
     
 
@@ -195,14 +198,16 @@ function App() {
       controls.update() // 暂时禁用
 
       if (ground) {
-        cubeCamera.position.copy(ground.position)
+        ground.visible = false
+        cubeCamera.position.copy(camera.position)
         cubeCamera.position.y = -cubeCamera.position.y
         cubeCamera.update(renderer, scene)
+        ground.visible = true
       }
       
 
-      requestAnimationFrame(animate)
       renderer.render(scene, camera)
+      requestAnimationFrame(animate)
     }
 
     animate()

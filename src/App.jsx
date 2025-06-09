@@ -188,14 +188,15 @@ function App() {
     
     // 动画循环
     function animate() {
-      requestAnimationFrame(animate)
-      renderer.render(scene, camera)
 
       // 更新控制器
       controls.update() // 暂时禁用
       cubeCamera.position.copy(camera.position)
       cubeCamera.position.y = -cubeCamera.position.y
       cubeCamera.update(renderer, scene)
+
+      requestAnimationFrame(animate)
+      renderer.render(scene, camera)
     }
 
     animate()

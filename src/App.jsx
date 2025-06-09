@@ -122,7 +122,7 @@ function App() {
               });
               child.material.needsUpdate = true;
             }
-            child.material.side = THREE.DoubleSide
+            child.material.side = THREE.FrontSide
             child.visible = true
           }
           if(child.type == "Object3D"){  
@@ -151,8 +151,9 @@ function App() {
 
 
     
-    const cubeRenderTarget =  new THREE.WebGLCubeRenderTarget(1024);
+    const cubeRenderTarget =  new THREE.WebGLCubeRenderTarget(2048);
     const cubeCamera = new THREE.CubeCamera(0.01, 100, cubeRenderTarget)
+    cubeCamera.position.set(0, 0.01, 0)
     // 控制器设置 - 暂时禁用 OrbitControls，使用手动控制
     
 
@@ -193,6 +194,7 @@ function App() {
       // 更新控制器
       controls.update() // 暂时禁用
       cubeCamera.position.copy(camera.position)
+      cubeCamera.position.y = -cubeCamera.position.y
       cubeCamera.update(renderer, scene)
     }
 

@@ -41,9 +41,9 @@ function App() {
     mountRef.current.appendChild(renderer.domElement)
 
 
-    const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0x00ff00}))
-    scene.add(box)
-    box.position.set(0, 1.2, 0)
+    // const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0x00ff00}))
+    // scene.add(box)
+    // box.position.set(0, 1.2, 0)
 
 
 
@@ -95,7 +95,7 @@ function App() {
      
      const gltfloader = new GLTFLoader()
     //  gltfloader.setDRACOLoader(dracoLoader)
-     
+     const ground ;
      gltfloader.load(
       '/assets/model/xiaomi.glb', 
       (gltf) => {
@@ -116,18 +116,20 @@ function App() {
               child.material = new THREE.MeshStandardMaterial({
                 ...child.material,
                 envMap: cubeRenderTarget.texture,
-                envMapIntensity: 1.0,
-                metalness: 0.9,
-                roughness: 0.1
+                envMapIntensity: 1.0, // 环境贴图强度
+                metalness: 1, // 金属度
+                roughness: 0 // 粗糙度
               });
               child.material.needsUpdate = true;
             }
             child.material.side = THREE.FrontSide
-            child.visible = true
+            ground = child
+            // child.material.side = THREE.DoubleSide
+            // child.visible = true
           }
-          if(child.type == "Object3D"){  
-            child.visible = false
-          }
+          // if(child.type == "Object3D"){  
+          //   child.visible = false
+          // }
         })
         car.scale.set(0.1, 0.1, 0.1)
         scene.add(car)
@@ -191,9 +193,13 @@ function App() {
 
       // 更新控制器
       controls.update() // 暂时禁用
-      cubeCamera.position.copy(camera.position)
-      cubeCamera.position.y = -cubeCamera.position.y
-      cubeCamera.update(renderer, scene)
+
+      if (ground) {
+        cubeCamera.position.copy(ground.position)
+        cubeCamera.position.y = -cubeCamera.position.y
+        cubeCamera.update(renderer, scene)
+      }
+      
 
       requestAnimationFrame(animate)
       renderer.render(scene, camera)

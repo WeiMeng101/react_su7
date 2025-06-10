@@ -100,7 +100,6 @@ function App() {
       '/assets/model/xiaomi.glb', 
       (gltf) => {
         const car = gltf.scene
-        console.log("car",car);
         car.position.set(0, 0, 0)
         car.traverse((child) => {
           // if (child.isMesh) {
@@ -109,30 +108,24 @@ function App() {
           //   // 添加到可点击对象数组
           //   clickableObjects.push(child)
           // }
-         
-          if(child.type == "Mesh"){
+          console.log("name",child.name);
+          
+          if(child.name == "ground"){
             // 确保材质支持环境贴图
             if (child.material) {
               child.material = new THREE.MeshStandardMaterial({
                 ...child.material,
                 envMap: cubeRenderTarget.texture,
-                envMapIntensity: 1.0, // 环境贴图强度
-                metalness: 1, // 金属度
-                roughness: 0 // 粗糙度
+                envMapIntensity: 1.0,  // 增加环境贴图强度
+                metalness: 1,        // 调整金属度
+                roughness: 0,        // 调整粗糙度
+                side: THREE.DoubleSide
               });
               child.material.needsUpdate = true;
-              // ground = child
+              ground = child;
             }
-            if(child.name == "ground"){
-            child.material.side = THREE.DoubleSide
-              ground = child
-            }
-            // child.material.side = THREE.DoubleSide
-            // child.visible = true
           }
-          // if(child.type == "Object3D"){  
-          //   child.visible = false
-          // }
+          
         })
         car.scale.set(0.1, 0.1, 0.1)
         scene.add(car)
@@ -144,9 +137,9 @@ function App() {
      hdrloader.load(
       'sky.hdr', 
       (texture) => {
-        texture.mapping = THREE.EquirectangularReflectionMapping
         scene.background = texture
         scene.environment = texture
+        texture.mapping = THREE.EquirectangularReflectionMapping
       }
     )
 
@@ -156,11 +149,18 @@ function App() {
 
 
     
-    const cubeRenderTarget =  new THREE.WebGLCubeRenderTarget(2048);
-    const cubeCamera = new THREE.CubeCamera(0.01, 100, cubeRenderTarget)
-    cubeCamera.position.set(0, 0, 0)
-    // 控制器设置 - 暂时禁用 OrbitControls，使用手动控制
-    
+    const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(2048);
+
+    const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
+    scene.add(cubeCamera)
+
+    // 添加一些光源来增强反射效果
+    // const ambientLight = new THREE.AmbientLight(0xffffff, 1)
+    // scene.add(ambientLight)
+
+    // const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+    // directionalLight.position.set(5, 5, 5)
+    // scene.add(directionalLight)
 
     // Raycaster 用于点击检测
     const raycaster = new THREE.Raycaster()
@@ -195,16 +195,16 @@ function App() {
     function animate() {
 
       // 更新控制器
-      controls.update() // 暂时禁用
+      controls.update()
 
+      // 更新 cubeCamera
       if (ground) {
-        ground.visible = false
+        ground.visible = false  // 临时隐藏地面以避免自反射
         cubeCamera.position.copy(camera.position)
         cubeCamera.position.y = -cubeCamera.position.y
         cubeCamera.update(renderer, scene)
-        ground.visible = true
+        ground.visible = true   // 恢复地面可见性
       }
-      
 
       renderer.render(scene, camera)
       requestAnimationFrame(animate)

@@ -6,6 +6,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { log } from 'three/tsl'
 import { FlyControls } from 'three/addons/controls/FlyControls.js';
+import gsap from 'gsap'
 
 function App() {
   const mountRef = useRef(null)
@@ -29,15 +30,15 @@ function App() {
       0.1,
       1000
     )
-    camera.position.set(3, 3, 3)
+    camera.position.set(1.6, 1.6, 1.6)
     camera.lookAt(0, 0, 0)
 
     // 渲染器设置
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setPixelRatio(window.devicePixelRatio)
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    // renderer.shadowMap.enabled = true // 开启阴影
+    // renderer.shadowMap.type = THREE.PCFSoftShadowMap // 设置阴影类型
     mountRef.current.appendChild(renderer.domElement)
 
 
@@ -93,7 +94,7 @@ function App() {
     // scene.add(axesHelper)
 
      
-     const gltfloader = new GLTFLoader()
+     const gltfloader = new GLTFLoader() 
     //  gltfloader.setDRACOLoader(dracoLoader)
      let ground ;
      gltfloader.load(
@@ -108,7 +109,6 @@ function App() {
           //   // 添加到可点击对象数组
           //   clickableObjects.push(child)
           // }
-          console.log("name",child.name);
           
           if(child.name == "ground"){
             // 确保材质支持环境贴图
@@ -132,6 +132,25 @@ function App() {
             child.material.map.anisotropy = 8 // 设置抗锯齿
           }
 
+          if(child.name == "flyline"){  // 控制流光 
+            child.material.map.anisotropy = 8 /
+            gsap.to(child.material.map.offset,{
+              x:-1,
+              duration:1,// 时间
+              ease:"none", // 缓动
+              repeat:-1 // 重复
+            })
+          }
+
+          if (child.name == "su7") {
+            console.log(child);
+            child.traverse((item) => {
+              if (item.type == "Mesh") {
+                item.material.envMapIntensity = 10 // 设置环境贴图强度
+              }
+            })
+          }
+
         })
         car.scale.set(0.1, 0.1, 0.1)
         scene.add(car)
@@ -143,9 +162,9 @@ function App() {
      hdrloader.load(
       'sky.hdr', 
       (texture) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping
         scene.background = texture
         scene.environment = texture
-        texture.mapping = THREE.EquirectangularReflectionMapping
       }
     )
 
@@ -247,24 +266,8 @@ function App() {
     <div className="relative w-screen h-screen overflow-hidden">
       {/* Three.js 画布容器 */}
       <div ref={mountRef} className="absolute inset-0 z-0" />
-      
-      {/* UI 覆盖层 */}
-      <div className="absolute top-0 left-0 right-0 p-4 bg-black/50 backdrop-blur-sm pointer-events-none z-10">
-        <h1 className="text-2xl font-bold text-white mb-2">
-          Three.js + React + Tailwind
-        </h1>
-        <p className="text-gray-300 text-sm">
-          左键拖动旋转 | 滚轮缩放 | 右键平移 | 点击物体改变颜色
-        </p>
-        <p className="text-white mt-2">
-          点击次数: {clickCount}
-        </p>
-      </div>
-      
       {/* 底部信息 */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/50 backdrop-blur-sm text-white text-sm pointer-events-none z-10">
-        <p>使用 OrbitControls 控制相机，点击立方体、球体或圆锥体改变颜色</p>
-      </div>
+
     </div>
   )
 }

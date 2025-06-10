@@ -116,8 +116,8 @@ function App() {
               child.material = new THREE.MeshStandardMaterial({
                 ...child.material,
                 envMap: cubeRenderTarget.texture,
-                envMapIntensity: 1.0,  // 增加环境贴图强度
-                metalness: 1,        // 调整金属度
+                envMapIntensity: 0.8,  // 增加环境贴图强度
+                metalness: 0.9,        // 调整金属度
                 roughness: 0,        // 调整粗糙度
                 side: THREE.DoubleSide
               });
@@ -125,7 +125,13 @@ function App() {
               ground = child;
             }
           }
-          
+          if(child.name == "ground_shadow"){  
+            child.material.side = THREE.DoubleSide
+          }
+          if(child.name == "ground_shadow"){  
+            child.material.map.anisotropy = 8 // 设置抗锯齿
+          }
+
         })
         car.scale.set(0.1, 0.1, 0.1)
         scene.add(car)

@@ -111,6 +111,7 @@ function App() {
           // }
           
           if(child.name == "ground"){
+          
             // 确保材质支持环境贴图
             if (child.material) {
               child.material = new THREE.MeshStandardMaterial({
@@ -121,19 +122,28 @@ function App() {
                 roughness: 0,        // 调整粗糙度
                 side: THREE.DoubleSide
               });
-              child.material.needsUpdate = true;
+              child.material.needsUpdate = true;  
               ground = child;
             }
           }
           if(child.name == "ground_shadow"){  
             child.material.side = THREE.DoubleSide
-          }
-          if(child.name == "ground_shadow"){  
             child.material.map.anisotropy = 8 // 设置抗锯齿
           }
 
+          if(child.name == "ground_shader"){  
+            child.material.map.anisotropy = 8 // 设置抗锯齿
+            gsap.to(child.material.map.offset,{
+                y:-1,
+                duration:0.6,// 时间
+                ease:"none", // 缓动
+                repeat:-1 // 重复
+              })
+          }
+          
+
           if(child.name == "flyline"){  // 控制流光 
-            child.material.map.anisotropy = 8 /
+            child.material.map.anisotropy = 8
             gsap.to(child.material.map.offset,{
               x:-1,
               duration:1,// 时间

@@ -110,7 +110,7 @@ function App() {
           //   clickableObjects.push(child)
           // }
           
-          if(child.name == "ground"){
+          if(child.name === "ground"){
           
             // 确保材质支持环境贴图
             if (child.material) {
@@ -161,6 +161,21 @@ function App() {
             })
           }
 
+          if (child.name == "lunzhouhou"||
+            child.name == "luntaiqian"||
+            child.name == "luntaihou"||
+            child.name == "lunguqian"||
+            child.name == "houluntai"||
+            child.name == "qianluntai") {
+              console.log("child lun ===",child);
+              gsap.to(child.rotation,{
+                x:-2*Math.PI,
+                duration:0.4,// 时间
+                ease:"none", // 缓动
+                repeat:-1 // 重复
+              })
+              
+          }
         })
         car.scale.set(0.1, 0.1, 0.1)
         scene.add(car)

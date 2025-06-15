@@ -306,6 +306,24 @@ function App() {
                                 ease: "none", // 缓动
                                 repeat: -1, // 重复
                             })
+
+                        luntaiqian.userData['cameraPositionX'] =
+                            gsap.to(camera.position,{
+                            x:camera.position.x+0.008,
+                            repeat:-1,
+                            ease:"circ.inOut",
+                            duration:0.2,
+                                onUpdate: () => {
+                                    camera.updateProjectionMatrix()
+                            }
+                        })
+                        luntaiqian.userData['cameraPositionY'] =
+                            gsap.to(camera.position,{
+                            y:camera.position.y+0.01,
+                            repeat:-1,
+                                ease:"circ.inOut",
+                            duration:0.2,
+                        })
                     }
                 })
 
@@ -392,6 +410,15 @@ function App() {
             }
             if (cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen']) {
                 cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
+            }
+
+            if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
+                cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+            }
+
+
+            if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
+                cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
             }
 
             if (cardItemObj['luntaihou'].userData['luntaihouTwen']) {

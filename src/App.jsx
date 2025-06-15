@@ -233,16 +233,8 @@ function App() {
 
         animate()
 
-        // 处理窗口大小调整
-        function handleResize() {
-            camera.aspect = window.innerWidth / window.innerHeight
-            camera.updateProjectionMatrix()
-            renderer.setSize(window.innerWidth, window.innerHeight)
-        }
 
-        window.addEventListener('resize', handleResize)
-
-        window.addEventListener('mousedown', () => {
+        function startAni() {
 
             gsap.to(camera, {
                 fov: 95,
@@ -334,10 +326,9 @@ function App() {
                             })
                     }
                 })
+        }
 
-        })
-
-        window.addEventListener('mouseup', () => {
+        function endAni() {
             gsap.to(camera, {
                 fov: 75,
                 duration: 0.6,
@@ -347,13 +338,6 @@ function App() {
                     camera.updateProjectionMatrix()
                 }
             })
-            // cardItemObj['flyline'].userData['flylineTwen'].kill() // 立即停止并销毁这个动画
-            // cardItemObj['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
-            // cardItemObj['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
-            // cardItemObj['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
-            // cardItemObj['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
-
-
             gsap.to(cardItemObj['flyline'].material.map.offset, {
                 x: cardItemObj['flyline'].material.map.offset.x - 0.4,
                 duration: 0.8,// 时间
@@ -366,9 +350,6 @@ function App() {
                 duration: 0.8,// 时间
                 ease: "power1.out", // 缓动
                 repeat: 0, // 重复
-                onComplete: () => {
-                    cardItemObj['flyline'].userData['flylineOpacityTwen'].kill()
-                }
             })
 
             gsap.to(cardItemObj['ground_shader'].material.map.offset, {
@@ -376,10 +357,6 @@ function App() {
                 duration: 0.4,// 时间
                 ease: "power1.out", // 缓动
                 repeat: 0, // 重复
-                onComplete: () => {
-                    cardItemObj['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
-                    cardItemObj['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
-                }
             })
 
 
@@ -388,10 +365,6 @@ function App() {
                 duration: 0.4,// 时间
                 ease: "power1.out", // 缓动
                 repeat: 0, // 重复
-                onComplete: () => {
-                    cardItemObj['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
-                    cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
-                }
             })
 
             gsap.to(cardItemObj['luntaihou'].rotation, {
@@ -399,40 +372,82 @@ function App() {
                 duration: 0.4,// 时间
                 ease: "power1.out", // 缓动
                 repeat: 0, // 重复
-                onComplete: () => {
-                    cardItemObj['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
-                    cardItemObj['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
-                }
             })
+        }
 
+        function clearAni() {
+            cardItemObj['flyline'].userData['flylineTwen'].kill()
+            cardItemObj['flyline'].userData['flylineOpacityTwen'].kill()
 
+            if (cardItemObj['ground_shader'].userData['groundShaderTwen']) {
+                cardItemObj['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
+            }
+
+            if (cardItemObj['ground_shader'].userData['groundShadernCompleteTwen']) {
+                cardItemObj['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
+            }
+
+            if (cardItemObj['luntaiqian'].userData['luntaiqianTwen']) {
+                cardItemObj['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
+            }
+            if (cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen']) {
+                cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
+            }
+
+            if (cardItemObj['luntaihou'].userData['luntaihouTwen']) {
+                cardItemObj['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
+            }
+
+            if (cardItemObj['luntaihou'].userData['luntaihouCompleteTwen']) {
+                cardItemObj['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
+            }
+        }
+
+        // 处理窗口大小调整
+        const handleResize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight
+            camera.updateProjectionMatrix()
+            renderer.setSize(window.innerWidth, window.innerHeight)
+        }
+
+        window.addEventListener('resize', () => {
+            handleResize()
+        })
+
+        window.addEventListener('mousedown', () => {
+            startAni()
+        })
+
+        window.addEventListener('mouseup', () => {
+            endAni()
+            clearAni()
         })
 
 
-            // 清理
-            return () => {
-                window.removeEventListener('resize', handleResize)
+        // 清理
+        return () => {
+            window.removeEventListener('resize', handleResize)
 
-                // 清理 Three.js 资源
-                // controls.dispose() // 暂时禁用
-                renderer.dispose()
+            // 清理 Three.js 资源
+            // controls.dispose() // 暂时禁用
+            renderer.dispose()
 
-                // 使用局部变量避免 ref 值改变的问题
-                const currentMount = mountRef.current
-                if (currentMount && renderer.domElement) {
-                    currentMount.removeChild(renderer.domElement)
-                }
+            // 使用局部变量避免 ref 值改变的问题
+            const currentMount = mountRef.current
+            if (currentMount && renderer.domElement) {
+                currentMount.removeChild(renderer.domElement)
             }
-        }, [])
+        }
+    }, [])
 
-        return (
-            <div className="relative w-screen h-screen overflow-hidden">
-                {/* Three.js 画布容器 */}
-                <div ref={mountRef} className="absolute inset-0 z-0"/>
-                {/* 底部信息 */}
+    return (
+        <div className="relative w-screen h-screen overflow-hidden">
+            {/* Three.js 画布容器 */}
+            <div ref={mountRef} className="absolute inset-0 z-0"/>
+            {/* 底部信息 */}
 
-            </div>
-        )
-    }
+        </div>
+    )
+}
 
-    export default App
+export default App

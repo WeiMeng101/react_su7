@@ -4,7 +4,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { log } from 'three/tsl'
 import { FlyControls } from 'three/addons/controls/FlyControls.js';
 import gsap from 'gsap'
 
@@ -25,12 +24,12 @@ function App() {
 
     // 相机设置
     const camera = new THREE.PerspectiveCamera(
-      60,
+      75,
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     )
-    camera.position.set(1.6, 1.6, 1.6)
+    camera.position.set(1, 1, 1)
     camera.lookAt(0, 0, 0)
 
     // 渲染器设置
@@ -270,6 +269,31 @@ function App() {
     }
 
     window.addEventListener('resize', handleResize)
+
+    window.addEventListener('mousedown',()=>{
+        gsap.to(camera,{
+          fov:95,
+          duration:0.5,
+          repeat:0,
+          ease:'power1.inOut',
+          onUpdate:()=>{
+            camera.updateProjectionMatrix()
+          }
+        })
+    })
+
+    window.addEventListener('mouseup',()=>{
+      gsap.to(camera,{
+        fov:75,
+        duration:0.5,
+        repeat:0,
+        ease:'power1.inOut',
+        onUpdate:()=>{
+          camera.updateProjectionMatrix()
+        }
+      })
+    })
+
 
     // 清理
     return () => {

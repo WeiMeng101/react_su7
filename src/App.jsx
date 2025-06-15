@@ -20,7 +20,9 @@ function App() {
 
         // 场景设置
         const scene = new THREE.Scene()
+
         scene.background = new THREE.Color(0x222222)
+        scene.fog = new THREE.FogExp2('#000000',0.05)
 
         // 相机设置
         const camera = new THREE.PerspectiveCamera(
@@ -47,6 +49,10 @@ function App() {
 
 
         const controls = new OrbitControls(camera, renderer.domElement);
+        controls.maxPolarAngle=1.3
+        controls.minPolarAngle=0.2
+        controls.maxDistance = 2.5
+        controls.minDistance = 1.8
         // 灯光
         // const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
         // scene.add(ambientLight)
@@ -322,7 +328,7 @@ function App() {
                             y:camera.position.y+0.01,
                             repeat:-1,
                                 ease:"circ.inOut",
-                            duration:0.2,
+                            duration:0.3,
                         })
                     }
                 })
@@ -416,7 +422,6 @@ function App() {
                 cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
             }
 
-
             if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
                 cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
             }
@@ -448,6 +453,16 @@ function App() {
         window.addEventListener('mouseup', () => {
             endAni()
             clearAni()
+        })
+
+        window.addEventListener('mousemove',()=>{
+            if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
+                cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+            }
+
+            if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
+                cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
+            }
         })
 
 

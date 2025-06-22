@@ -415,14 +415,23 @@ function App() {
         window.addEventListener('resize', () => {
             handleResize()
         })
-        window.addEventListener('mousedown', () => {
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.tagName === 'BUTTON'){
+                return
+            }
             startAni()
         })
-        window.addEventListener('mouseup', () => {
+        window.addEventListener('mouseup', (e) => {
+            if (e.target.tagName === 'BUTTON'){
+                return
+            }
             endAni()
             clearAni()
         })
-        window.addEventListener('mousemove',()=>{
+        window.addEventListener('mousemove',(e)=>{
+            if (e.target.tagName === 'BUTTON'){
+                return
+            }
             if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
                 cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
             }
@@ -431,6 +440,8 @@ function App() {
                 cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
             }
         })
+
+
 
         // 清理
         return () => {
@@ -448,8 +459,40 @@ function App() {
         }
     }, [])
 
+    function runCar() {
+        console.log("驾驶")
+    }
+    function lengthCar() {
+        console.log("车身")
+    }
+    function tailwindCar() {
+        console.log("风阻")
+    }
+    function aiControllerCar() {
+        console.log("车身")
+    }
+
     return (
         <div className="relative w-screen h-screen overflow-hidden">
+
+            <div className="absolute z-10 h-full right-0 ">
+                <div className="flex items-center justify-end h-full">
+                    <div className="flex-row p-6">
+                        <button className="block select-none" onClick={runCar}>
+                            驾驶
+                        </button>
+                        <button className="block select-none pt-12" onClick={lengthCar}>
+                            车身
+                        </button>
+                        <button className="block select-none pt-12" onClick={tailwindCar}>
+                            风阻
+                        </button>
+                        <button className="block select-none pt-12" onClick={aiControllerCar}>
+                            智驾
+                        </button>
+                    </div>
+                </div>
+            </div>
             {/* Three.js 画布容器 */}
             <div ref={mountRef} className="absolute inset-0 z-0"/>
             {/* 底部信息 */}

@@ -6,6 +6,10 @@ import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import {FlyControls} from 'three/addons/controls/FlyControls.js';
 import gsap from 'gsap'
+import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer.js";
+import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import {Vector2} from "three";
+import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass.js";
 
 function App() {
     const mountRef = useRef(null)
@@ -174,8 +178,15 @@ function App() {
 
         // 添加事件监听
         renderer.domElement.addEventListener('click', handleClick)
-
-
+        let effectComposer;
+        function initEffect() {
+            effectComposer = new EffectComposer(renderer);
+            const unrealBloomPass =  new UnrealBloomPass(new THREE.Vector2(window.width,window.height),0.3,0.1,0.1)
+            let renderPass = new RenderPass(scene,camera);
+            effectComposer.addPass(renderPass)
+            effectComposer.addPass(unrealBloomPass)
+        }
+        initEffect()
         // 动画循环
         function animate() {
 
@@ -191,11 +202,13 @@ function App() {
                 ground.visible = true   // 恢复地面可见性
             }
 
-            renderer.render(scene, camera)
+            // renderer.render(scene, camera)
+            effectComposer.render()
             requestAnimationFrame(animate)
         }
 
         animate()
+
 
 
         function startAni() {

@@ -53,47 +53,9 @@ function App() {
         controls.minPolarAngle=0.2
         controls.maxDistance = 2.5
         controls.minDistance = 1.8
-        // 灯光
-        // const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
-        // scene.add(ambientLight)
-
-        // const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
-        // directionalLight.position.set(10, 10, 5)
-        // directionalLight.castShadow = true
-        // directionalLight.shadow.camera.near = 0.1
-        // directionalLight.shadow.camera.far = 50
-        // directionalLight.shadow.camera.left = -10
-        // directionalLight.shadow.camera.right = 10
-        // directionalLight.shadow.camera.top = 10
-        // directionalLight.shadow.camera.bottom = -10
-        // scene.add(directionalLight)
-
-        // // 添加地面
-        // const groundGeometry = new THREE.PlaneGeometry(20, 20)
-        // const groundMaterial = new THREE.MeshStandardMaterial({
-        //   color: 0x444444,
-        //   roughness: 0.8
-        // })
-        // const ground = new THREE.Mesh(groundGeometry, groundMaterial)
-        // ground.rotation.x = -Math.PI / 2
-        // ground.position.y = -0.5
-        // ground.receiveShadow = true
-        // scene.add(ground)
 
         // 存储可点击的对象
         const clickableObjects = []
-
-
-        // GLTF 加载器 - 设置 DRACOLoader
-        //  const dracoLoader = new DRACOLoader()
-        //  dracoLoader.setDecoderPath('./assets/draco/')
-        //  dracoLoader.setDecoderConfig({ type: 'js' })
-
-
-        // 加入控制
-        // const axesHelper = new THREE.AxesHelper(10)
-        // scene.add(axesHelper)
-
 
         const cardItemObj = {}
         const gltfloader = new GLTFLoader()
@@ -105,14 +67,21 @@ function App() {
                 const car = gltf.scene
                 car.position.set(0, 0, 0)
                 car.traverse((child) => {
-                    // if (child.isMesh) {
-                    //   child.castShadow = true
-                    //   child.receiveShadow = true
-                    //   // 添加到可点击对象数组
-                    //   clickableObjects.push(child)
-                    // }
                     cardItemObj[child.name] = child
                     console.log("cardItemObj[child.name]", cardItemObj[child.name])
+
+                    if (child.type === 'Mesh') {
+                        // child.material.envMap = cubeRenderTarget.texture;
+                        child.material = new THREE.MeshStandardMaterial({
+                            ...child.material,
+                            envMap: cubeRenderTarget.texture,
+                            envMapIntensity: 5,  // 增加环境贴图强度
+                            metalness: 0.6,        // 调整金属度
+                            roughness: 0.1,        // 调整粗糙度
+
+                        });
+                        // child.visible = false;
+                    }
 
                     if (child.name === "ground") {
 
@@ -171,23 +140,12 @@ function App() {
             }
         )
 
-        // const light = new THREE.DirectionalLight(0xffffff, 2)
-        // light.position.set(10, 10, 10)
-        // scene.add(light)
 
 
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
 
         const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
         scene.add(cubeCamera)
-
-        // 添加一些光源来增强反射效果
-        // const ambientLight = new THREE.AmbientLight(0xffffff, 1)
-        // scene.add(ambientLight)
-
-        // const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
-        // directionalLight.position.set(5, 5, 5)
-        // scene.add(directionalLight)
 
         // Raycaster 用于点击检测
         const raycaster = new THREE.Raycaster()
@@ -441,20 +399,16 @@ function App() {
             camera.updateProjectionMatrix()
             renderer.setSize(window.innerWidth, window.innerHeight)
         }
-
         window.addEventListener('resize', () => {
             handleResize()
         })
-
         window.addEventListener('mousedown', () => {
             startAni()
         })
-
         window.addEventListener('mouseup', () => {
             endAni()
             clearAni()
         })
-
         window.addEventListener('mousemove',()=>{
             if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
                 cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
@@ -464,7 +418,6 @@ function App() {
                 cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
             }
         })
-
 
         // 清理
         return () => {

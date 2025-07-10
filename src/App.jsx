@@ -16,6 +16,8 @@ function App() {
     const initRef = useRef(false)  // 添加初始化标记
     const [clickCount, setClickCount] = useState(0)
 
+    const [userSwitchRef,setUserSwitchRef] = useRef(0)
+
     useEffect(() => {
         if (!mountRef.current || initRef.current) return  // 检查是否已经初始化
         initRef.current = true  // 标记为已初始化
@@ -82,7 +84,6 @@ function App() {
                             envMapIntensity: 5,  // 增加环境贴图强度
                             metalness: 0.6,        // 调整金属度
                             roughness: 0.1,        // 调整粗糙度
-
                         });
                         // child.visible = false;
                     }
@@ -103,12 +104,12 @@ function App() {
                             ground = child;
                         }
                     }
-                    if (child.name == "ground_shadow") {
+                    if (child.name === "ground_shadow") {
                         child.material.side = THREE.DoubleSide
                         child.material.map.anisotropy = 8 // 设置抗锯齿
                     }
 
-                    if (child.name == "su7") {
+                    if (child.name === "su7") {
                         console.log(child);
                         child.traverse((item) => {
                             if (item.type == "Mesh") {
@@ -117,15 +118,25 @@ function App() {
                         })
                     }
 
-                    if (child.name == "ground_shader") {
-                        child.material.map.anisotropy = 8 // 设置抗锯齿
+                    if (child.name === "ground_shader") {
+                        child.material.map.anisotropy = 8 // 设置抗锯齿 // 
                     }
 
-                    if (child.name == "flyline") {  // 控制流光
+                    if (child.name === "flyline") {  // 控制流光
                         child.material.map.anisotropy = 8
                         child.material.opacity = 0
                     }
 
+                    if (child.name === "scanline") {  // 控制流光
+                        gsap.to(child.material.map.offset,{
+                            y: child.material.map.offset.y - 1,
+                            duration:15,
+                            repeat: -1, // 重复
+                            ease: "none", // 缓动
+                        })
+                        // child.material.map.anisotropy = 8
+                        // child.material.opacity = 0
+                    }
 
                 })
                 car.scale.set(0.1, 0.1, 0.1)
@@ -206,11 +217,7 @@ function App() {
             effectComposer.render()
             requestAnimationFrame(animate)
         }
-
         animate()
-
-
-
         function startAni() {
 
             gsap.to(camera, {
@@ -322,7 +329,6 @@ function App() {
                     }
                 })
         }
-
         function endAni() {
             gsap.to(camera, {
                 fov: 75,
@@ -369,7 +375,6 @@ function App() {
                 repeat: 0, // 重复
             })
         }
-
         function clearAni() {
             cardItemObj['flyline'].userData['flylineTwen'].kill()
             cardItemObj['flyline'].userData['flylineOpacityTwen'].kill()
@@ -460,15 +465,19 @@ function App() {
     }, [])
 
     function runCar() {
+        setUserSwitchRef(0)
         console.log("驾驶")
     }
     function lengthCar() {
+        setUserSwitchRef(1)
         console.log("车身")
     }
     function tailwindCar() {
+        setUserSwitchRef(2)
         console.log("风阻")
     }
     function aiControllerCar() {
+        setUserSwitchRef(3)
         console.log("车身")
     }
 

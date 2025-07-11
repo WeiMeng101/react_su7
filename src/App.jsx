@@ -311,7 +311,7 @@ function App() {
         })
 
         if (cardItemObj.current['scanline']) {
-            gsap.to(cardItemObj.current['scanline'], {
+            gsap.to(cardItemObj.current['scanline'].material, {
                 opacity: 0,
                 duration: 1,
                 repeat: 0,
@@ -443,11 +443,12 @@ function App() {
             }
         }
         if (userSwitchRef.current===1){
-            if (cardItemObj.current['scanline']) {
-                cardItemObj.current['scanline'].visible = true
-                gsap.to(cardItemObj.current['scanline'], {
+            const currentElement = cardItemObj.current['scanline'];
+            if (currentElement) {
+                currentElement.visible = true
+                currentElement.userData["scanlineOpacityTwen"] = gsap.to(currentElement.material, {
                     opacity: 1,
-                    duration: 2,
+                    duration: 1,
                     repeat: 0,
                     ease:"none"
                 })
@@ -459,19 +460,20 @@ function App() {
         if (!modelLoaded.current) return
 
         if (cardItemObj.current['carsizeMain']) {
+            cardItemObj.current['carsizeMain'].material.transparent = true
             if (userSwitchRef.current === 1) {
                 cardItemObj.current['carsizeMain'].visible = true
                 console.log("显示")
-                gsap.to(cardItemObj.current['carsizeMain'], {
+                gsap.to(cardItemObj.current['carsizeMain'].material, {
                     opacity: 1,
-                    duration: 2,
+                    duration: 0.6,
                     repeat: 0,
-                    ease:"none",
+                    ease:"none"
                 })
             } else {
-                gsap.to(cardItemObj.current['carsizeMain'], {
+                gsap.to(cardItemObj.current['carsizeMain'].material, {
                     opacity: 0,
-                    duration: 2,
+                    duration: 0.6,
                     repeat: 0,
                     ease:"none",
                     onComplete: () => {
@@ -482,12 +484,15 @@ function App() {
         }
 
         if (cardItemObj.current['scanline']) {
+
+            cardItemObj.current['scanline'].material.transparent = true
+
             console.log("cardItemObj.current['scanline']",cardItemObj.current['scanline'])
             if (userSwitchRef.current === 1) {
                 cardItemObj.current['scanline'].visible = false
                 cardItemObj.current['scanline'].opacity = 0
             }else {
-                gsap.to(cardItemObj.current['scanline'], {
+                gsap.to(cardItemObj.current['scanline'].material, {
                     opacity: 0,
                     duration: 2,
                     repeat: 0,
@@ -505,8 +510,12 @@ function App() {
     function clearAni() {
         if (!modelLoaded.current) return
 
-        cardItemObj.current['flyline'].userData['flylineTwen'].kill()
-        cardItemObj.current['flyline'].userData['flylineOpacityTwen'].kill()
+        if (cardItemObj.current['flyline'].userData['flylineTwen']){
+            cardItemObj.current['flyline'].userData['flylineTwen'].kill()
+        }
+        if (cardItemObj.current['flyline'].userData['flylineOpacityTwen']){
+            cardItemObj.current['flyline'].userData['flylineOpacityTwen'].kill()
+        }
 
         if (cardItemObj.current['ground_shader'].userData['groundShaderTwen']) {
             cardItemObj.current['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
@@ -538,6 +547,11 @@ function App() {
         if (cardItemObj.current['luntaihou'].userData['luntaihouCompleteTwen']) {
             cardItemObj.current['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
         }
+
+        if (cardItemObj.current['scanline'].userData['scanlineOpacityTwen']) {
+            cardItemObj.current['scanline'].userData['scanlineOpacityTwen'].kill() // 立即停止并销毁这个动画
+        }
+
     }
 
     function runCar() {

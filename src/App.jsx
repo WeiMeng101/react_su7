@@ -15,10 +15,17 @@ function App() {
     const mountRef = useRef(null)
     const initRef = useRef(false)  // 添加初始化标记
     const [clickCount, setClickCount] = useState(0)
-
-    const [userSwitchRef,setUserSwitchRef] = useState(0)
-    let cardItemObj= useRef(null)
-    let camera = useRef(null)
+    // const [modelLoaded, setModelLoaded] = useState(false)
+    let modelLoaded = useRef(false)
+    // const [userSwitchRef, setUserSwitchRef] = useState(0)
+    let userSwitchRef = useRef(0)
+    let cardItemObj = useRef(null)
+    let camera = useRef(new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+    ))
     useEffect(() => {
         if (!mountRef.current || initRef.current) return  // 检查是否已经初始化
         initRef.current = true  // 标记为已初始化
@@ -29,17 +36,11 @@ function App() {
         const scene = new THREE.Scene()
 
         scene.background = new THREE.Color(0x222222)
-        scene.fog = new THREE.FogExp2('#000000',0.05)
+        scene.fog = new THREE.FogExp2('#000000', 0.05)
 
         // 相机设置
-       camera = new THREE.PerspectiveCamera(
-            75,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000
-        )
-        camera.position.set(1, 1, 1)
-        camera.lookAt(0, 0, 0)
+        camera.current.position.set(1, 1, 1)
+        camera.current.lookAt(0, 0, 0)
 
         // 渲染器设置
         const renderer = new THREE.WebGLRenderer({antialias: true})
@@ -54,10 +55,9 @@ function App() {
         // scene.add(box)
         // box.position.set(0, 1.2, 0)
 
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.maxPolarAngle=1.3
-        controls.minPolarAngle=0.2
+        const controls = new OrbitControls(camera.current, renderer.domElement);
+        controls.maxPolarAngle = 1.3
+        controls.minPolarAngle = 0.2
         controls.maxDistance = 2.5
         controls.minDistance = 1.8
 
@@ -72,9 +72,10 @@ function App() {
             '/assets/model/xiaomi.glb',
             (gltf) => {
                 const car = gltf.scene
+                cardItemObj.current = {}
                 car.position.set(0, 0, 0)
                 car.traverse((child) => {
-                    cardItemObj[child.name] = child
+                    cardItemObj.current[child.name] = child
                     if (child.type === 'Mesh') {
                         // child.material.envMap = cubeRenderTarget.texture;
                         child.material = new THREE.MeshStandardMaterial({
@@ -127,9 +128,9 @@ function App() {
                     }
 
                     if (child.name === "scanline") {  // 控制流光
-                        gsap.to(child.material.map.offset,{
+                        gsap.to(child.material.map.offset, {
                             y: child.material.map.offset.y - 1,
-                            duration:15,
+                            duration: 15,
                             repeat: -1, // 重复
                             ease: "none", // 缓动
                         })
@@ -140,8 +141,8 @@ function App() {
                     if (child.name === "carsizeMain") {
                         child.visible = false
                     }
-
                 })
+                modelLoaded.current = true
                 car.scale.set(0.1, 0.1, 0.1)
                 scene.add(car)
             }
@@ -159,47 +160,22 @@ function App() {
         )
 
 
-
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
         const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
         scene.add(cubeCamera)
 
-        // Raycaster 用于点击检测
-        const raycaster = new THREE.Raycaster()
-        const mouse = new THREE.Vector2()
-
-        // 点击事件处理
-        function handleClick(event) {
-            setClickCount(prev => prev + 1)
-
-            // 计算鼠标位置
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
-
-            // 射线检测
-            raycaster.setFromCamera(mouse, camera)
-            const intersects = raycaster.intersectObjects(clickableObjects)
-
-            if (intersects.length > 0) {
-                const object = intersects[0].object
-                // 随机改变颜色
-                if (object.material && object.material.color) {
-                    object.material.color.setHex(Math.random() * 0xffffff)
-                }
-            }
-        }
-
-        // 添加事件监听
-        renderer.domElement.addEventListener('click', handleClick)
         let effectComposer;
+
         function initEffect() {
             effectComposer = new EffectComposer(renderer);
-            const unrealBloomPass =  new UnrealBloomPass(new THREE.Vector2(window.width,window.height),0.3,0.1,0.1)
-            let renderPass = new RenderPass(scene,camera);
+            const unrealBloomPass = new UnrealBloomPass(new THREE.Vector2(window.width, window.height), 0.3, 0.1, 0.1)
+            let renderPass = new RenderPass(scene, camera.current);
             effectComposer.addPass(renderPass)
             effectComposer.addPass(unrealBloomPass)
         }
+
         initEffect()
+
         // 动画循环
         function animate() {
 
@@ -209,7 +185,7 @@ function App() {
             // 更新 cubeCamera
             if (ground) {
                 ground.visible = false  // 临时隐藏地面以避免自反射
-                cubeCamera.position.copy(camera.position)
+                cubeCamera.position.copy(camera.current.position)
                 cubeCamera.position.y = -cubeCamera.position.y
                 cubeCamera.update(renderer, scene)
                 ground.visible = true   // 恢复地面可见性
@@ -219,50 +195,49 @@ function App() {
             effectComposer.render()
             requestAnimationFrame(animate)
         }
-        animate()
 
+        animate()
 
         // 处理窗口大小调整
         const handleResize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight
-            camera.updateProjectionMatrix()
+            camera.current.aspect = window.innerWidth / window.innerHeight
+            camera.current.updateProjectionMatrix()
             renderer.setSize(window.innerWidth, window.innerHeight)
         }
         window.addEventListener('resize', () => {
             handleResize()
         })
+
+
+
         window.addEventListener('mousedown', (e) => {
-            if (e.target.tagName === 'BUTTON'){
+            if (e.target.tagName === 'BUTTON') {
                 return
             }
             startAni()
         })
         window.addEventListener('mouseup', (e) => {
-            if (e.target.tagName === 'BUTTON'){
+            if (e.target.tagName === 'BUTTON') {
                 return
             }
             endAni()
             clearAni()
         })
-        window.addEventListener('mousemove',(e)=>{
-            if (e.target.tagName === 'BUTTON'){
+        window.addEventListener('mousemove', (e) => {
+            if (e.target.tagName === 'BUTTON') {
                 return
             }
-            if (!cardItemObj) return
-            if (cardItemObj['luntaiqian']){
-                if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
-                    cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+            if (!modelLoaded.current) return;
+            if (cardItemObj.current['luntaiqian']) {
+                if (cardItemObj.current['luntaiqian'].userData['cameraPositionX']) {
+                    cardItemObj.current['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
                 }
 
-                if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
-                    cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
+                if (cardItemObj.current['luntaiqian'].userData['cameraPositionY']) {
+                    cardItemObj.current['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
                 }
             }
-
-
         })
-
-
 
         // 清理
         return () => {
@@ -281,28 +256,30 @@ function App() {
     }, [])
 
 
-    function endAni() {
-        if (!cardItemObj) return
 
-        gsap.to(camera, {
+
+    function endAni() {
+       if (!modelLoaded.current) return
+
+        gsap.to(camera.current, {
             fov: 75,
             duration: 0.6,
             repeat: 0,
             ease: 'power1.inOut',
             onUpdate: () => {
-                camera.updateProjectionMatrix()
+                camera.current.updateProjectionMatrix()
             }
         })
 
-        if (cardItemObj['flyline']){
-            gsap.to(cardItemObj['flyline'].material.map.offset, {
-                x: cardItemObj['flyline'].material.map.offset.x - 0.4,
+        if (cardItemObj.current['flyline']) {
+            gsap.to(cardItemObj.current['flyline'].material.map.offset, {
+                x: cardItemObj.current['flyline'].material.map.offset.x - 0.4,
                 duration: 0.8,// 时间
                 ease: "power1.out", // 缓动
                 repeat: 0, // 重复
             })  // 管理动画
 
-            gsap.to(cardItemObj['flyline'].material, {
+            gsap.to(cardItemObj.current['flyline'].material, {
                 opacity: 0,
                 duration: 0.8,// 时间
                 ease: "power1.out", // 缓动
@@ -310,70 +287,59 @@ function App() {
             })
         }
 
+        if (cardItemObj.current['ground_shader']) {
+            gsap.to(cardItemObj.current['ground_shader'].material.map.offset, {
+                y: cardItemObj.current['ground_shader'].material.map.offset.y - 0.4,
+                duration: 0.4,// 时间
+                ease: "power1.out", // 缓动
+                repeat: 0, // 重复
+            })
+        }
 
-        gsap.to(cardItemObj['ground_shader'].material.map.offset, {
-            y: cardItemObj['ground_shader'].material.map.offset.y - 0.4,
+        gsap.to(cardItemObj.current['luntaiqian'].rotation, {
+            x: cardItemObj.current['luntaiqian'].rotation.x - Math.PI,
             duration: 0.4,// 时间
             ease: "power1.out", // 缓动
             repeat: 0, // 重复
         })
 
-
-        gsap.to(cardItemObj['luntaiqian'].rotation, {
-            x: cardItemObj['luntaiqian'].rotation.x - Math.PI,
+        gsap.to(cardItemObj.current['luntaihou'].rotation, {
+            x: cardItemObj.current['luntaihou'].rotation.x - Math.PI,
             duration: 0.4,// 时间
             ease: "power1.out", // 缓动
             repeat: 0, // 重复
         })
 
-        gsap.to(cardItemObj['luntaihou'].rotation, {
-            x: cardItemObj['luntaihou'].rotation.x - Math.PI,
-            duration: 0.4,// 时间
-            ease: "power1.out", // 缓动
-            repeat: 0, // 重复
-        })
+        if (cardItemObj.current['scanline']) {
+            gsap.to(cardItemObj.current['scanline'], {
+                opacity: 0,
+                duration: 1,
+                repeat: 0,
+                ease:"none",
+                onComplete:()=>{
+                    cardItemObj.current['scanline'].visible = false
+                }
+            })
+        }
     }
 
     function startAni() {
-        if (!cardItemObj) return
-        gsap.to(camera, {
+        console.log("startAni")
+
+        console.log("modelLoaded",modelLoaded.current)
+        if (!modelLoaded.current) return
+
+        gsap.to(camera.current, {
             fov: 95,
             duration: 0.6,
             repeat: 0,
             ease: 'power1.inOut',
             onUpdate: () => {
-                camera.updateProjectionMatrix()
+                camera.current.updateProjectionMatrix()
             }
         })
-        if (cardItemObj['flyline']){
-            const flyline = cardItemObj['flyline']
-            flyline.userData['flylineTwen'] =
-                gsap.to(flyline.material.map.offset, {
-                    x: flyline.material.map.offset.x - 0.4,
-                    duration: 0.8,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0, // 重复
-                    onComplete: () => {
-                        flyline.userData['flylineTwenComplete'] =
-                            gsap.to(flyline.material.map.offset, {
-                                x: flyline.material.map.offset.x - 1,
-                                duration: 1,// 时间
-                                ease: "none", // 缓动
-                                repeat: -1, // 重复
-                            })  // 管理动画
-                    }
-                })  // 管理动画
-            flyline.userData['flylineOpacityTwen'] =
-                gsap.to(flyline.material, {
-                    opacity: 1,
-                    duration: 0.4,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0 // 重复
-                }) // 管理动画
-        }
-
-        if (cardItemObj['ground_shader']){
-            const groundShader = cardItemObj['ground_shader']
+        if (cardItemObj.current['ground_shader']) {
+            const groundShader = cardItemObj.current['ground_shader']
             groundShader.userData['groundShaderTwen'] =
                 gsap.to(groundShader.material.map.offset, {
                     y: groundShader.material.map.offset.y - 0.6,
@@ -391,9 +357,8 @@ function App() {
                     }
                 })
         }
-
-        if (cardItemObj['luntaiqian']) {
-            const luntaiqian = cardItemObj['luntaiqian']
+        if (cardItemObj.current['luntaiqian']) {
+            const luntaiqian = cardItemObj.current['luntaiqian']
             luntaiqian.userData['luntaiqianTwen'] =
                 gsap.to(luntaiqian.rotation, {
                     x: luntaiqian.rotation.x - Math.PI,
@@ -410,27 +375,27 @@ function App() {
                             })
 
                         luntaiqian.userData['cameraPositionX'] =
-                            gsap.to(camera.position,{
-                                x:camera.position.x+0.008,
-                                repeat:-1,
-                                ease:"circ.inOut",
-                                duration:0.2,
+                            gsap.to(camera.current.position, {
+                                x: camera.current.position.x + 0.008,
+                                repeat: -1,
+                                ease: "circ.inOut",
+                                duration: 0.2,
                                 onUpdate: () => {
-                                    camera.updateProjectionMatrix()
+                                    camera.current.updateProjectionMatrix()
                                 }
                             })
                         luntaiqian.userData['cameraPositionY'] =
-                            gsap.to(camera.position,{
-                                y:camera.position.y+0.01,
-                                repeat:-1,
-                                ease:"circ.inOut",
-                                duration:0.3,
+                            gsap.to(camera.current.position, {
+                                y: camera.current.position.y + 0.01,
+                                repeat: -1,
+                                ease: "circ.inOut",
+                                duration: 0.3,
                             })
                     }
                 })
         }
-        if (cardItemObj['luntaihou']) {
-            const luntaihou = cardItemObj['luntaihou']
+        if (cardItemObj.current['luntaihou']) {
+            const luntaihou = cardItemObj.current['luntaihou']
             luntaihou.userData['luntaihouTwen'] =
                 gsap.to(luntaihou.rotation, {
                     x: luntaihou.rotation.x - Math.PI,
@@ -449,88 +414,152 @@ function App() {
                 })
         }
 
-    }
-
-    function clearAni() {
-        if (!cardItemObj) return
-        cardItemObj['flyline'].userData['flylineTwen'].kill()
-        cardItemObj['flyline'].userData['flylineOpacityTwen'].kill()
-
-        if (cardItemObj['ground_shader'].userData['groundShaderTwen']) {
-            cardItemObj['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
+        if (userSwitchRef.current===0){
+            if (cardItemObj.current['flyline']) {
+                const flyline = cardItemObj.current['flyline']
+                flyline.userData['flylineTwen'] =
+                    gsap.to(flyline.material.map.offset, {
+                        x: flyline.material.map.offset.x - 0.4,
+                        duration: 0.8,// 时间
+                        ease: "power1.in", // 缓动
+                        repeat: 0, // 重复
+                        onComplete: () => {
+                            flyline.userData['flylineTwenComplete'] =
+                                gsap.to(flyline.material.map.offset, {
+                                    x: flyline.material.map.offset.x - 1,
+                                    duration: 1,// 时间
+                                    ease: "none", // 缓动
+                                    repeat: -1, // 重复
+                                })  // 管理动画
+                        }
+                    })  // 管理动画
+                flyline.userData['flylineOpacityTwen'] =
+                    gsap.to(flyline.material, {
+                        opacity: 1,
+                        duration: 0.4,// 时间
+                        ease: "power1.in", // 缓动
+                        repeat: 0 // 重复
+                    }) // 管理动画
+            }
         }
-
-        if (cardItemObj['ground_shader'].userData['groundShadernCompleteTwen']) {
-            cardItemObj['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
-        }
-
-        if (cardItemObj['luntaiqian'].userData['luntaiqianTwen']) {
-            cardItemObj['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
-        }
-        if (cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen']) {
-            cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
-        }
-
-        if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
-            cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
-        }
-
-        if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
-            cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
-        }
-
-        if (cardItemObj['luntaihou'].userData['luntaihouTwen']) {
-            cardItemObj['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
-        }
-
-        if (cardItemObj['luntaihou'].userData['luntaihouCompleteTwen']) {
-            cardItemObj['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
-        }
-    }
-
-    useEffect(()=>{
-        console.log("switchCardModel",userSwitchRef)
-        if (cardItemObj['carsizeMain']){
-            cardItemObj['carsizeMain'].visible = false
-            if (userSwitchRef === 1){
-                cardItemObj['carsizeMain'].visible = true
-                console.log("显示")
-                gsap.to( cardItemObj['carsizeMain'],{
-                    opacity:0,
-                    duration:2,
-                    repeat:0,
+        if (userSwitchRef.current===1){
+            if (cardItemObj.current['scanline']) {
+                cardItemObj.current['scanline'].visible = true
+                gsap.to(cardItemObj.current['scanline'], {
+                    opacity: 1,
+                    duration: 2,
+                    repeat: 0,
+                    ease:"none"
                 })
-            }else {
-                gsap.to( cardItemObj['carsizeMain'],{
-                    opacity:1,
-                    duration:2,
-                    repeat:0,
-                    onComplete:()=>{
-                        cardItemObj['carsizeMain'].visible = false
+            }
+        }
+    }
+
+    const switchRunModel = ()=>{
+        if (!modelLoaded.current) return
+
+        if (cardItemObj.current['carsizeMain']) {
+            if (userSwitchRef.current === 1) {
+                cardItemObj.current['carsizeMain'].visible = true
+                console.log("显示")
+                gsap.to(cardItemObj.current['carsizeMain'], {
+                    opacity: 1,
+                    duration: 2,
+                    repeat: 0,
+                    ease:"none",
+                })
+            } else {
+                gsap.to(cardItemObj.current['carsizeMain'], {
+                    opacity: 0,
+                    duration: 2,
+                    repeat: 0,
+                    ease:"none",
+                    onComplete: () => {
+                        cardItemObj.current['carsizeMain'].visible = false
                     }
                 })
             }
-
-            // cardItemObj['carsizeMain'].visible = userSwitchRef === 1;
         }
 
-    },[userSwitchRef])
+        if (cardItemObj.current['scanline']) {
+            console.log("cardItemObj.current['scanline']",cardItemObj.current['scanline'])
+            if (userSwitchRef.current === 1) {
+                cardItemObj.current['scanline'].visible = false
+                cardItemObj.current['scanline'].opacity = 0
+            }else {
+                gsap.to(cardItemObj.current['scanline'], {
+                    opacity: 0,
+                    duration: 2,
+                    repeat: 0,
+                    ease:"none",
+                    onComplete: () => {
+                        cardItemObj.current['scanline'].visible = false
+                    }
+                })
+            }
+        }
 
 
-     function runCar() {
-         setUserSwitchRef(0)
-        console.log("驾驶")
     }
-     function lengthCar() {
-         setUserSwitchRef(1)
+
+    function clearAni() {
+        if (!modelLoaded.current) return
+
+        cardItemObj.current['flyline'].userData['flylineTwen'].kill()
+        cardItemObj.current['flyline'].userData['flylineOpacityTwen'].kill()
+
+        if (cardItemObj.current['ground_shader'].userData['groundShaderTwen']) {
+            cardItemObj.current['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj.current['ground_shader'].userData['groundShadernCompleteTwen']) {
+            cardItemObj.current['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj.current['luntaiqian'].userData['luntaiqianTwen']) {
+            cardItemObj.current['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
+        }
+        if (cardItemObj.current['luntaiqian'].userData['luntaiqianCompleteTwen']) {
+            cardItemObj.current['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj.current['luntaiqian'].userData['cameraPositionX']) {
+            cardItemObj.current['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj.current['luntaiqian'].userData['cameraPositionY']) {
+            cardItemObj.current['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj.current['luntaihou'].userData['luntaihouTwen']) {
+            cardItemObj.current['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj.current['luntaihou'].userData['luntaihouCompleteTwen']) {
+            cardItemObj.current['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
+        }
+    }
+
+    function runCar() {
+        userSwitchRef.current = 0
+        switchRunModel()
+    }
+
+    function lengthCar() {
+        userSwitchRef.current = 1
+        switchRunModel()
         console.log("车身")
     }
-     function tailwindCar() {
-         setUserSwitchRef(2)
+
+    function tailwindCar() {
+        userSwitchRef.current = 2
+        switchRunModel()
         console.log("风阻")
     }
-     function aiControllerCar() {
-         setUserSwitchRef(3)
+
+    function aiControllerCar() {
+        userSwitchRef.current = 3
+        switchRunModel()
         console.log("车身")
     }
 

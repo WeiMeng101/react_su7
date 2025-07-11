@@ -16,8 +16,9 @@ function App() {
     const initRef = useRef(false)  // 添加初始化标记
     const [clickCount, setClickCount] = useState(0)
 
-    const [userSwitchRef,setUserSwitchRef] = useRef(0)
-
+    const [userSwitchRef,setUserSwitchRef] = useState(0)
+    let cardItemObj= useRef(null)
+    let camera = useRef(null)
     useEffect(() => {
         if (!mountRef.current || initRef.current) return  // 检查是否已经初始化
         initRef.current = true  // 标记为已初始化
@@ -31,7 +32,7 @@ function App() {
         scene.fog = new THREE.FogExp2('#000000',0.05)
 
         // 相机设置
-        const camera = new THREE.PerspectiveCamera(
+       camera = new THREE.PerspectiveCamera(
             75,
             window.innerWidth / window.innerHeight,
             0.1,
@@ -63,7 +64,7 @@ function App() {
         // 存储可点击的对象
         const clickableObjects = []
 
-        const cardItemObj = {}
+
         const gltfloader = new GLTFLoader()
         //  gltfloader.setDRACOLoader(dracoLoader)
         let ground;
@@ -74,8 +75,6 @@ function App() {
                 car.position.set(0, 0, 0)
                 car.traverse((child) => {
                     cardItemObj[child.name] = child
-                    console.log("cardItemObj[child.name]", cardItemObj[child.name])
-
                     if (child.type === 'Mesh') {
                         // child.material.envMap = cubeRenderTarget.texture;
                         child.material = new THREE.MeshStandardMaterial({
@@ -134,8 +133,12 @@ function App() {
                             repeat: -1, // 重复
                             ease: "none", // 缓动
                         })
+                        child.visible = false
                         // child.material.map.anisotropy = 8
                         // child.material.opacity = 0
+                    }
+                    if (child.name === "carsizeMain") {
+                        child.visible = false
                     }
 
                 })
@@ -158,7 +161,6 @@ function App() {
 
 
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
-
         const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
         scene.add(cubeCamera)
 
@@ -218,198 +220,7 @@ function App() {
             requestAnimationFrame(animate)
         }
         animate()
-        function startAni() {
 
-            gsap.to(camera, {
-                fov: 95,
-                duration: 0.6,
-                repeat: 0,
-                ease: 'power1.inOut',
-                onUpdate: () => {
-                    camera.updateProjectionMatrix()
-                }
-            })
-
-            const flyline = cardItemObj['flyline']
-
-            flyline.userData['flylineTwen'] =
-                gsap.to(flyline.material.map.offset, {
-                    x: flyline.material.map.offset.x - 0.4,
-                    duration: 0.8,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0, // 重复
-                    onComplete: () => {
-                        flyline.userData['flylineTwenComplete'] =
-                            gsap.to(flyline.material.map.offset, {
-                                x: flyline.material.map.offset.x - 1,
-                                duration: 1,// 时间
-                                ease: "none", // 缓动
-                                repeat: -1, // 重复
-                            })  // 管理动画
-                    }
-                })  // 管理动画
-
-
-            flyline.userData['flylineOpacityTwen'] =
-                gsap.to(flyline.material, {
-                    opacity: 1,
-                    duration: 0.4,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0 // 重复
-                }) // 管理动画
-            const groundShader = cardItemObj['ground_shader']
-            groundShader.userData['groundShaderTwen'] =
-                gsap.to(groundShader.material.map.offset, {
-                    y: groundShader.material.map.offset.y - 0.6,
-                    duration: 0.6,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0, // 重复
-                    onComplete: () => {
-                        groundShader.userData['groundShadernCompleteTwen'] =
-                            gsap.to(groundShader.material.map.offset, {
-                                y: groundShader.material.map.offset.y - 1,
-                                duration: 0.6,// 时间
-                                ease: "none", // 缓动
-                                repeat: -1 // 重复
-                            })
-                    }
-                })
-
-            const luntaiqian = cardItemObj['luntaiqian']
-            luntaiqian.userData['luntaiqianTwen'] =
-                gsap.to(luntaiqian.rotation, {
-                    x: luntaiqian.rotation.x - Math.PI,
-                    duration: 0.6,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0, // 重复
-                    onComplete: () => {
-                        luntaiqian.userData['luntaiqianCompleteTwen'] =
-                            gsap.to(luntaiqian.rotation, {
-                                x: luntaiqian.rotation.x - 2 * Math.PI,
-                                duration: 1,// 时间
-                                ease: "none", // 缓动
-                                repeat: -1, // 重复
-                            })
-
-                        luntaiqian.userData['cameraPositionX'] =
-                            gsap.to(camera.position,{
-                            x:camera.position.x+0.008,
-                            repeat:-1,
-                            ease:"circ.inOut",
-                            duration:0.2,
-                                onUpdate: () => {
-                                    camera.updateProjectionMatrix()
-                            }
-                        })
-                        luntaiqian.userData['cameraPositionY'] =
-                            gsap.to(camera.position,{
-                            y:camera.position.y+0.01,
-                            repeat:-1,
-                                ease:"circ.inOut",
-                            duration:0.3,
-                        })
-                    }
-                })
-
-            const luntaihou = cardItemObj['luntaihou']
-            luntaihou.userData['luntaihouTwen'] =
-                gsap.to(luntaihou.rotation, {
-                    x: luntaihou.rotation.x - Math.PI,
-                    duration: 0.6,// 时间
-                    ease: "power1.in", // 缓动
-                    repeat: 0, // 重复
-                    onComplete: () => {
-                        luntaihou.userData['luntaihouCompleteTwen'] =
-                            gsap.to(luntaihou.rotation, {
-                                x: luntaihou.rotation.x - 2 * Math.PI,
-                                duration: 1,// 时间
-                                ease: "none", // 缓动
-                                repeat: -1, // 重复
-                            })
-                    }
-                })
-        }
-        function endAni() {
-            gsap.to(camera, {
-                fov: 75,
-                duration: 0.6,
-                repeat: 0,
-                ease: 'power1.inOut',
-                onUpdate: () => {
-                    camera.updateProjectionMatrix()
-                }
-            })
-            gsap.to(cardItemObj['flyline'].material.map.offset, {
-                x: cardItemObj['flyline'].material.map.offset.x - 0.4,
-                duration: 0.8,// 时间
-                ease: "power1.out", // 缓动
-                repeat: 0, // 重复
-            })  // 管理动画
-
-            gsap.to(cardItemObj['flyline'].material, {
-                opacity: 0,
-                duration: 0.8,// 时间
-                ease: "power1.out", // 缓动
-                repeat: 0, // 重复
-            })
-
-            gsap.to(cardItemObj['ground_shader'].material.map.offset, {
-                y: cardItemObj['ground_shader'].material.map.offset.y - 0.4,
-                duration: 0.4,// 时间
-                ease: "power1.out", // 缓动
-                repeat: 0, // 重复
-            })
-
-
-            gsap.to(cardItemObj['luntaiqian'].rotation, {
-                x: cardItemObj['luntaiqian'].rotation.x - Math.PI,
-                duration: 0.4,// 时间
-                ease: "power1.out", // 缓动
-                repeat: 0, // 重复
-            })
-
-            gsap.to(cardItemObj['luntaihou'].rotation, {
-                x: cardItemObj['luntaihou'].rotation.x - Math.PI,
-                duration: 0.4,// 时间
-                ease: "power1.out", // 缓动
-                repeat: 0, // 重复
-            })
-        }
-        function clearAni() {
-            cardItemObj['flyline'].userData['flylineTwen'].kill()
-            cardItemObj['flyline'].userData['flylineOpacityTwen'].kill()
-
-            if (cardItemObj['ground_shader'].userData['groundShaderTwen']) {
-                cardItemObj['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
-            }
-
-            if (cardItemObj['ground_shader'].userData['groundShadernCompleteTwen']) {
-                cardItemObj['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
-            }
-
-            if (cardItemObj['luntaiqian'].userData['luntaiqianTwen']) {
-                cardItemObj['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
-            }
-            if (cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen']) {
-                cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
-            }
-
-            if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
-                cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
-            }
-
-            if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
-                cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
-            }
-
-            if (cardItemObj['luntaihou'].userData['luntaihouTwen']) {
-                cardItemObj['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
-            }
-
-            if (cardItemObj['luntaihou'].userData['luntaihouCompleteTwen']) {
-                cardItemObj['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
-            }
-        }
 
         // 处理窗口大小调整
         const handleResize = () => {
@@ -437,13 +248,18 @@ function App() {
             if (e.target.tagName === 'BUTTON'){
                 return
             }
-            if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
-                cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+            if (!cardItemObj) return
+            if (cardItemObj['luntaiqian']){
+                if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
+                    cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+                }
+
+                if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
+                    cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
+                }
             }
 
-            if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
-                cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
-            }
+
         })
 
 
@@ -464,20 +280,257 @@ function App() {
         }
     }, [])
 
-    function runCar() {
-        setUserSwitchRef(0)
+
+    function endAni() {
+        if (!cardItemObj) return
+
+        gsap.to(camera, {
+            fov: 75,
+            duration: 0.6,
+            repeat: 0,
+            ease: 'power1.inOut',
+            onUpdate: () => {
+                camera.updateProjectionMatrix()
+            }
+        })
+
+        if (cardItemObj['flyline']){
+            gsap.to(cardItemObj['flyline'].material.map.offset, {
+                x: cardItemObj['flyline'].material.map.offset.x - 0.4,
+                duration: 0.8,// 时间
+                ease: "power1.out", // 缓动
+                repeat: 0, // 重复
+            })  // 管理动画
+
+            gsap.to(cardItemObj['flyline'].material, {
+                opacity: 0,
+                duration: 0.8,// 时间
+                ease: "power1.out", // 缓动
+                repeat: 0, // 重复
+            })
+        }
+
+
+        gsap.to(cardItemObj['ground_shader'].material.map.offset, {
+            y: cardItemObj['ground_shader'].material.map.offset.y - 0.4,
+            duration: 0.4,// 时间
+            ease: "power1.out", // 缓动
+            repeat: 0, // 重复
+        })
+
+
+        gsap.to(cardItemObj['luntaiqian'].rotation, {
+            x: cardItemObj['luntaiqian'].rotation.x - Math.PI,
+            duration: 0.4,// 时间
+            ease: "power1.out", // 缓动
+            repeat: 0, // 重复
+        })
+
+        gsap.to(cardItemObj['luntaihou'].rotation, {
+            x: cardItemObj['luntaihou'].rotation.x - Math.PI,
+            duration: 0.4,// 时间
+            ease: "power1.out", // 缓动
+            repeat: 0, // 重复
+        })
+    }
+
+    function startAni() {
+        if (!cardItemObj) return
+        gsap.to(camera, {
+            fov: 95,
+            duration: 0.6,
+            repeat: 0,
+            ease: 'power1.inOut',
+            onUpdate: () => {
+                camera.updateProjectionMatrix()
+            }
+        })
+        if (cardItemObj['flyline']){
+            const flyline = cardItemObj['flyline']
+            flyline.userData['flylineTwen'] =
+                gsap.to(flyline.material.map.offset, {
+                    x: flyline.material.map.offset.x - 0.4,
+                    duration: 0.8,// 时间
+                    ease: "power1.in", // 缓动
+                    repeat: 0, // 重复
+                    onComplete: () => {
+                        flyline.userData['flylineTwenComplete'] =
+                            gsap.to(flyline.material.map.offset, {
+                                x: flyline.material.map.offset.x - 1,
+                                duration: 1,// 时间
+                                ease: "none", // 缓动
+                                repeat: -1, // 重复
+                            })  // 管理动画
+                    }
+                })  // 管理动画
+            flyline.userData['flylineOpacityTwen'] =
+                gsap.to(flyline.material, {
+                    opacity: 1,
+                    duration: 0.4,// 时间
+                    ease: "power1.in", // 缓动
+                    repeat: 0 // 重复
+                }) // 管理动画
+        }
+
+        if (cardItemObj['ground_shader']){
+            const groundShader = cardItemObj['ground_shader']
+            groundShader.userData['groundShaderTwen'] =
+                gsap.to(groundShader.material.map.offset, {
+                    y: groundShader.material.map.offset.y - 0.6,
+                    duration: 0.6,// 时间
+                    ease: "power1.in", // 缓动
+                    repeat: 0, // 重复
+                    onComplete: () => {
+                        groundShader.userData['groundShadernCompleteTwen'] =
+                            gsap.to(groundShader.material.map.offset, {
+                                y: groundShader.material.map.offset.y - 1,
+                                duration: 0.6,// 时间
+                                ease: "none", // 缓动
+                                repeat: -1 // 重复
+                            })
+                    }
+                })
+        }
+
+        if (cardItemObj['luntaiqian']) {
+            const luntaiqian = cardItemObj['luntaiqian']
+            luntaiqian.userData['luntaiqianTwen'] =
+                gsap.to(luntaiqian.rotation, {
+                    x: luntaiqian.rotation.x - Math.PI,
+                    duration: 0.6,// 时间
+                    ease: "power1.in", // 缓动
+                    repeat: 0, // 重复
+                    onComplete: () => {
+                        luntaiqian.userData['luntaiqianCompleteTwen'] =
+                            gsap.to(luntaiqian.rotation, {
+                                x: luntaiqian.rotation.x - 2 * Math.PI,
+                                duration: 1,// 时间
+                                ease: "none", // 缓动
+                                repeat: -1, // 重复
+                            })
+
+                        luntaiqian.userData['cameraPositionX'] =
+                            gsap.to(camera.position,{
+                                x:camera.position.x+0.008,
+                                repeat:-1,
+                                ease:"circ.inOut",
+                                duration:0.2,
+                                onUpdate: () => {
+                                    camera.updateProjectionMatrix()
+                                }
+                            })
+                        luntaiqian.userData['cameraPositionY'] =
+                            gsap.to(camera.position,{
+                                y:camera.position.y+0.01,
+                                repeat:-1,
+                                ease:"circ.inOut",
+                                duration:0.3,
+                            })
+                    }
+                })
+        }
+        if (cardItemObj['luntaihou']) {
+            const luntaihou = cardItemObj['luntaihou']
+            luntaihou.userData['luntaihouTwen'] =
+                gsap.to(luntaihou.rotation, {
+                    x: luntaihou.rotation.x - Math.PI,
+                    duration: 0.6,// 时间
+                    ease: "power1.in", // 缓动
+                    repeat: 0, // 重复
+                    onComplete: () => {
+                        luntaihou.userData['luntaihouCompleteTwen'] =
+                            gsap.to(luntaihou.rotation, {
+                                x: luntaihou.rotation.x - 2 * Math.PI,
+                                duration: 1,// 时间
+                                ease: "none", // 缓动
+                                repeat: -1, // 重复
+                            })
+                    }
+                })
+        }
+
+    }
+
+    function clearAni() {
+        if (!cardItemObj) return
+        cardItemObj['flyline'].userData['flylineTwen'].kill()
+        cardItemObj['flyline'].userData['flylineOpacityTwen'].kill()
+
+        if (cardItemObj['ground_shader'].userData['groundShaderTwen']) {
+            cardItemObj['ground_shader'].userData['groundShaderTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj['ground_shader'].userData['groundShadernCompleteTwen']) {
+            cardItemObj['ground_shader'].userData['groundShadernCompleteTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj['luntaiqian'].userData['luntaiqianTwen']) {
+            cardItemObj['luntaiqian'].userData['luntaiqianTwen'].kill() // 立即停止并销毁这个动画
+        }
+        if (cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen']) {
+            cardItemObj['luntaiqian'].userData['luntaiqianCompleteTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj['luntaiqian'].userData['cameraPositionX']) {
+            cardItemObj['luntaiqian'].userData['cameraPositionX'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj['luntaiqian'].userData['cameraPositionY']) {
+            cardItemObj['luntaiqian'].userData['cameraPositionY'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj['luntaihou'].userData['luntaihouTwen']) {
+            cardItemObj['luntaihou'].userData['luntaihouTwen'].kill() // 立即停止并销毁这个动画
+        }
+
+        if (cardItemObj['luntaihou'].userData['luntaihouCompleteTwen']) {
+            cardItemObj['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
+        }
+    }
+
+    useEffect(()=>{
+        console.log("switchCardModel",userSwitchRef)
+        if (cardItemObj['carsizeMain']){
+            cardItemObj['carsizeMain'].visible = false
+            if (userSwitchRef === 1){
+                cardItemObj['carsizeMain'].visible = true
+                console.log("显示")
+                gsap.to( cardItemObj['carsizeMain'],{
+                    opacity:0,
+                    duration:2,
+                    repeat:0,
+                })
+            }else {
+                gsap.to( cardItemObj['carsizeMain'],{
+                    opacity:1,
+                    duration:2,
+                    repeat:0,
+                    onComplete:()=>{
+                        cardItemObj['carsizeMain'].visible = false
+                    }
+                })
+            }
+
+            // cardItemObj['carsizeMain'].visible = userSwitchRef === 1;
+        }
+
+    },[userSwitchRef])
+
+
+     function runCar() {
+         setUserSwitchRef(0)
         console.log("驾驶")
     }
-    function lengthCar() {
-        setUserSwitchRef(1)
+     function lengthCar() {
+         setUserSwitchRef(1)
         console.log("车身")
     }
-    function tailwindCar() {
-        setUserSwitchRef(2)
+     function tailwindCar() {
+         setUserSwitchRef(2)
         console.log("风阻")
     }
-    function aiControllerCar() {
-        setUserSwitchRef(3)
+     function aiControllerCar() {
+         setUserSwitchRef(3)
         console.log("车身")
     }
 

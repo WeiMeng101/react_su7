@@ -324,9 +324,7 @@ function App() {
     }
 
     function startAni() {
-        console.log("startAni")
 
-        console.log("modelLoaded",modelLoaded.current)
         if (!modelLoaded.current) return
 
         gsap.to(camera.current, {

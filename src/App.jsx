@@ -141,6 +141,9 @@ function App() {
                     if (child.name === "carsizeMain") {
                         child.visible = false
                     }
+                    if (child.name === "wind") {
+                        child.visible = false
+                    }
                 })
                 modelLoaded.current = true
                 car.scale.set(0.1, 0.1, 0.1)
@@ -501,6 +504,20 @@ function App() {
                 })
             }
         }
+        if (cardItemObj.current['wind']) {
+            if (userSwitchRef.current === 2) {
+                cardItemObj.current['wind'].visible = true
+                gsap.to(cardItemObj.current['wind'].material.map.offset, {
+                    x: cardItemObj.current['wind'].material.map.offset.x+1,
+                    repeat:-1,
+                    duration: 2,
+                    ease:"none",
+                })
+            }else {
+                cardItemObj.current['wind'].visible = false
+            }
+        }
+
 
 
     }

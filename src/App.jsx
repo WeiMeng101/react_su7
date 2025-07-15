@@ -144,6 +144,9 @@ function App() {
                     if (child.name === "wind") {
                         child.visible = false
                     }
+                    if (child.name === "carFrame3Main") {
+                        child.visible = false
+                    }
                 })
                 modelLoaded.current = true
                 car.scale.set(0.1, 0.1, 0.1)
@@ -324,6 +327,13 @@ function App() {
                 }
             })
         }
+
+        if (userSwitchRef.current===2){
+            cardItemObj.current['carFrame3Main'].visible = false
+            cardItemObj.current['su7'].visible = true
+            cardItemObj.current['luntaiqian'].visible = true
+
+        }
     }
 
     function startAni() {
@@ -455,6 +465,20 @@ function App() {
                 })
             }
         }
+        if (userSwitchRef.current===2){
+            const carFrame3Main = cardItemObj.current['carFrame3Main'];
+            if (carFrame3Main) {
+                carFrame3Main.visible = true
+                carFrame3Main.userData["scanlineOffsetTwen"] = gsap.to(carFrame3Main.material.map.offset, {
+                    x: carFrame3Main.material.map.offset.x+1,
+                    duration: 2,
+                    repeat: -1,
+                    ease:"none"
+                })
+            }
+           cardItemObj.current['su7'].visible = false
+           cardItemObj.current['luntaiqian'].visible = false
+        }
     }
 
     const switchRunModel = ()=>{
@@ -504,6 +528,7 @@ function App() {
                 })
             }
         }
+
         if (cardItemObj.current['wind']) {
             if (userSwitchRef.current === 2) {
                 cardItemObj.current['wind'].visible = true
@@ -517,8 +542,6 @@ function App() {
                 cardItemObj.current['wind'].visible = false
             }
         }
-
-
 
     }
 
@@ -567,6 +590,10 @@ function App() {
             cardItemObj.current['scanline'].userData['scanlineOpacityTwen'].kill() // 立即停止并销毁这个动画
         }
 
+        if (cardItemObj.current['carFrame3Main'].userData['scanlineOffsetTwen']) {
+            cardItemObj.current['carFrame3Main'].userData['scanlineOffsetTwen'].kill() // 立即停止并销毁这个动画
+        }
+
     }
 
     function runCar() {
@@ -587,7 +614,7 @@ function App() {
     }
 
     function aiControllerCar() {
-        userSwitchRef.current = 3
+        userSwitchRef.current = 3 // 切换
         switchRunModel()
         console.log("车身")
     }

@@ -593,6 +593,7 @@ function App() {
         if (cardItemObj.current['carFrame3Main'].userData['scanlineOffsetTwen']) {
             cardItemObj.current['carFrame3Main'].userData['scanlineOffsetTwen'].kill() // 立即停止并销毁这个动画
         }
+        // 需要重新管理
 
     }
 

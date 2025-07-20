@@ -1,17 +1,25 @@
-import {useState, useRef, useEffect} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import * as THREE from 'three'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
-import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader'
 import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
-import {FlyControls} from 'three/addons/controls/FlyControls.js';
 import gsap from 'gsap'
 import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer.js";
 import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import {Vector2} from "three";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass.js";
+import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 function App() {
+
+
+    let plane1 = new THREE.Plane(new THREE.Vector3(0,0,1));
+
+    let plane2 = new THREE.Plane(new THREE.Vector3(0,0,1));
+    let plane3 = new THREE.Plane(new THREE.Vector3(0,0,-1));
+    let plane4 = new THREE.Plane(new THREE.Vector3(0,0,-1));
+
+    let carEffect = [];
+
     const mountRef = useRef(null)
     const initRef = useRef(false)  // 添加初始化标记
     const [clickCount, setClickCount] = useState(0)
@@ -32,6 +40,8 @@ function App() {
         console.log("初始化");
 
 
+
+
         // 场景设置
         const scene = new THREE.Scene()
 
@@ -50,6 +60,7 @@ function App() {
         // renderer.shadowMap.type = THREE.PCFSoftShadowMap // 设置阴影类型
         mountRef.current.appendChild(renderer.domElement)
 
+        // renderer.clippingPlanes = [plane1]
 
         // const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0x00ff00}))
         // scene.add(box)
@@ -109,13 +120,67 @@ function App() {
                         child.material.map.anisotropy = 8 // 设置抗锯齿
                     }
 
+
+
                     if (child.name === "su7") {
-                        console.log(child);
+                        console.log("su7",child);
+                        plane1.constant = 1.1
                         child.traverse((item) => {
-                            if (item.type == "Mesh") {
-                                item.material.envMapIntensity = 10 // 设置环境贴图强度
+                            if (item.name === "carMain"){
+                                console.log("carMain",item)
+                                item.traverse((carMainItem)=>{
+                                    if (carMainItem.material){
+                                        // carMainItem.material.color = "#FFFFFF"
+                                        // carMainItem.material.alphaToCoverage  = true
+                                    // if (carMainItem.material){
+                                        carMainItem.material.alphaToCoverage  = true
+                                        carMainItem.material.clippingPlanes = [plane1]
+                                    //     carMainItem.material.alphaToCoverage  = true
+                                        carEffect.push(carMainItem)
+                                    }
+                                })
+
+                            }
+                            if (item.name === "luntaihou"||item.name === "luntaiqian"){
+                                item.traverse((lunItems)=>{
+                                    if (lunItems.material){
+                                        lunItems.material.alphaToCoverage  = true
+                                        lunItems.material.clippingPlanes = [plane1]
+                                    }
+                                })
                             }
                         })
+                        console.log("1111carEffect",carEffect)
+                        // let planeHelper1 = new THREE.PlaneHelper(plane1,2,0xffff00);
+                        // planeHelper1.position
+                        // let planeHelper2 = new THREE.PlaneHelper(plane2,2,0xffff00);
+
+                        // scene.add(planeHelper1)
+                        renderer.localClippingEnabled = true;
+
+                        // scene.add(planeHelper2)
+                    }
+
+                    if (child.name == "su7WhiteRoot") {
+                        plane2.constant = 1.02
+                        plane3.constant = -1.03
+                        console.log("su7White",child.name)
+                        child.traverse((itemRoot) => {
+                            console.log("itemRoot",itemRoot.name)
+                            if (itemRoot.material){
+                                itemRoot.material.alphaToCoverage  = true
+                                itemRoot.material.clippingPlanes = [plane2,plane3]
+                            }
+                        })
+                        // let planeHelper2 = new THREE.PlaneHelper(plane2,2,0x00ff00);
+                        // let planeHelper3 = new THREE.PlaneHelper(plane3,2,0x0000ff);
+                        // planeHelper1.position
+                        // let planeHelper2 = new THREE.PlaneHelper(plane2,2,0xffff00);
+                        child.visible = false
+                        // scene.add(planeHelper2)
+                        // scene.add(planeHelper3)
+
+                        renderer.localClippingEnabled = true;
                     }
 
                     if (child.name === "ground_shader") {
@@ -145,6 +210,16 @@ function App() {
                         child.visible = false
                     }
                     if (child.name === "carFrame3Main") {
+                        plane4.constant = 1.15
+                        child.traverse((itemRoot) => {
+                            console.log("itemRoot",itemRoot.name)
+                            if (itemRoot.material){
+                                itemRoot.material.alphaToCoverage  = true
+                                itemRoot.material.clippingPlanes = [plane4]
+                            }
+                        })
+                        // let planeHelper4 = new THREE.PlaneHelper(plane4,2,0x00ffF0);
+                        // scene.add(planeHelper4)
                         child.visible = false
                     }
                 })
@@ -245,6 +320,41 @@ function App() {
             }
         })
 
+        function openGui(){
+            let gui = new GUI();
+            let folder = gui.addFolder("裁切位置");
+            console.dir("carEffect",carEffect)
+
+
+            folder.add(renderer, "localClippingEnabled").name("Enable Clipping").listen()
+
+            folder.add(plane1,"constant",-1,1.1).name("X").onChange((v)=>{
+                carEffect.map(item=>{
+                    // console.log("item",item)
+                    if (item.material){
+                        // item.material.alphaToCoverage = v;
+                        // item.material.alphaTest = v
+                        // item.material.needsUpdate = true
+                    }
+                })
+            })
+
+            folder.add(plane2,"constant",-1,1.2).name("X2").onChange((v)=>{
+                carEffect.map(item=>{
+                    // console.log("item",item)
+                    if (item.material){
+                        // item.material.alphaToCoverage = v;
+                        // item.material.alphaTest = v
+                        // item.material.needsUpdate = true
+                    }
+                })
+            })
+            folder.add(plane3,"constant",-1,1.1).name("X3").listen()
+            // folder.add(plane4,"constant",-1,1.1).name("X4").listen()
+            gui.folders = [folder]
+        }
+        openGui()
+
         // 清理
         return () => {
             window.removeEventListener('resize', handleResize)
@@ -329,17 +439,71 @@ function App() {
         }
 
         if (userSwitchRef.current===2){
-            cardItemObj.current['carFrame3Main'].visible = false
-            cardItemObj.current['su7'].visible = true
-            cardItemObj.current['luntaiqian'].visible = true
+            const carFrame3Main = cardItemObj.current['carFrame3Main'];
+            if (carFrame3Main.userData["scanlinePlaneStartTwen"]){
+                carFrame3Main.userData["scanlinePlaneStartTwen"].kill()
+            }
 
+            if (carFrame3Main) {
+                carFrame3Main.userData["scanlinePlaneEndTwen"] = gsap.to(plane4, {
+                    constant: -1.05,
+                    duration: 1,
+                    repeat:0,
+                    ease:"none",
+                    onComplete: () => {
+                        carFrame3Main.visible = false
+                    }
+                })
+            }
+
+
+            let su7Main = cardItemObj.current['su7'];
+
+            if (su7Main.userData["su7MainPlaneStartTwen"]){
+                su7Main.userData["su7MainPlaneStartTwen"].kill()
+            }
+
+            su7Main.userData["su7MainPlaneEndTwen"] = gsap.to(plane1, {
+                constant: 1.1,
+                duration: 1,
+                repeat:0,
+                ease:"none",
+                onStart:()=>{
+                    su7Main.visible = true
+                }
+            })
+
+
+            let su7WhiteRoot = cardItemObj.current['su7WhiteRoot'];
+
+            if (su7WhiteRoot.userData["su7WhiteRootPlane2StartTwen"]){
+                su7WhiteRoot.userData["su7WhiteRootPlane2StartTwen"].kill()
+            }
+
+            if (su7WhiteRoot.userData["su7WhiteRootPlane3StartTwen"]){
+                su7WhiteRoot.userData["su7WhiteRootPlane3StartTwen"].kill()
+            }
+
+            su7WhiteRoot.userData["su7WhiteRootPlane2EndTwen"] = gsap.to(plane2, {
+                constant: 1.1,
+                duration: 1,
+                repeat:0,
+                ease:"none"
+            })
+            su7WhiteRoot.userData["su7WhiteRootPlane3EndTwen"] = gsap.to(plane3, {
+                constant: -1.08,
+                duration: 1,
+                repeat:0,
+                ease:"none"
+            })
+
+            // cardItemObj.current['su7'].visible = true
+            // cardItemObj.current['luntaiqian'].visible = true
         }
     }
 
     function startAni() {
-
         if (!modelLoaded.current) return
-
         gsap.to(camera.current, {
             fov: 95,
             duration: 0.6,
@@ -424,7 +588,6 @@ function App() {
                     }
                 })
         }
-
         if (userSwitchRef.current===0){
             if (cardItemObj.current['flyline']) {
                 const flyline = cardItemObj.current['flyline']
@@ -466,18 +629,84 @@ function App() {
             }
         }
         if (userSwitchRef.current===2){
+
+            // 控制三阶段的汽车线条
             const carFrame3Main = cardItemObj.current['carFrame3Main'];
             if (carFrame3Main) {
-                carFrame3Main.visible = true
+
+                if (carFrame3Main.userData["scanlinePlaneEndTwen"]){
+                    carFrame3Main.userData["scanlinePlaneEndTwen"].kill()
+                }
+
+                if (carFrame3Main.userData["scanlineOffsetTwen"]){
+                    carFrame3Main.userData["scanlineOffsetTwen"].kill()
+                }
+
                 carFrame3Main.userData["scanlineOffsetTwen"] = gsap.to(carFrame3Main.material.map.offset, {
                     x: carFrame3Main.material.map.offset.x+1,
-                    duration: 2,
+                    duration: 3,
                     repeat: -1,
+                    ease:"none",
+                })
+
+
+                carFrame3Main.userData["scanlinePlaneStartTwen"] = gsap.to(plane4, {
+                    constant: 1.15,
+                    duration: 1,
+                    repeat:0,
+                    ease:"none",
+                    onStart:()=>{
+                        carFrame3Main.visible = true
+                    }
+                })
+
+                // 控制车本体裁剪
+                let su7Main = cardItemObj.current['su7'];
+                if (su7Main.userData["su7MainPlaneEndTwen"]){
+                    su7Main.userData["su7MainPlaneEndTwen"].kill()
+                }
+                su7Main.userData["su7MainPlaneStartTwen"] = gsap.to(plane1, {
+                    constant: - 1.1,
+                    duration: 1,
+                    repeat:0,
+                    ease:"none",
+                    onComplete:()=>{
+                        su7Main.visible = false
+                    }
+                })
+
+                // 控制车本体裁剪描边
+
+                let su7WhiteRoot = cardItemObj.current['su7WhiteRoot'];
+                su7WhiteRoot.visible = true
+                if (su7WhiteRoot.userData["su7WhiteRootPlane2EndTwen"]){
+                    su7WhiteRoot.userData["su7WhiteRootPlane2EndTwen"].kill()
+                }
+                if (su7WhiteRoot.userData["su7WhiteRootPlane3EndTwen"]){
+                    su7WhiteRoot.userData["su7WhiteRootPlane3EndTwen"].kill()
+                }
+
+                su7WhiteRoot.userData["su7WhiteRootPlane2StartTwen"] = gsap.to(plane2, {
+                    constant: -1.1,
+                    duration: 1,
+                    repeat:0,
                     ease:"none"
                 })
+                su7WhiteRoot.userData["su7WhiteRootPlane3StartTwen"] = gsap.to(plane3, {
+                    constant: 1.12,
+                    duration: 1,
+                    repeat:0,
+                    ease:"none"
+                })
+
+
+
             }
-           cardItemObj.current['su7'].visible = false
-           cardItemObj.current['luntaiqian'].visible = false
+           // cardItemObj.current['su7'].visible = false
+           // cardItemObj.current['luntaiqian'].visible = false
+
+
+
         }
     }
 
@@ -590,9 +819,7 @@ function App() {
             cardItemObj.current['scanline'].userData['scanlineOpacityTwen'].kill() // 立即停止并销毁这个动画
         }
 
-        if (cardItemObj.current['carFrame3Main'].userData['scanlineOffsetTwen']) {
-            cardItemObj.current['carFrame3Main'].userData['scanlineOffsetTwen'].kill() // 立即停止并销毁这个动画
-        }
+
         // 需要重新管理
 
     }
@@ -624,7 +851,7 @@ function App() {
         <div className="relative w-screen h-screen overflow-hidden">
 
             <div className="absolute z-10 h-full right-0 ">
-                <div className="flex items-center justify-end h-full">
+                <div className="flex items-center justify-end h-full ">
                     <div className="flex-row p-6">
                         <button className="block select-none" onClick={runCar}>
                             驾驶

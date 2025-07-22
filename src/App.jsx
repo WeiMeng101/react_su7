@@ -243,21 +243,15 @@ function App() {
                             }
 
                             scene.add(aiRunScanMashPositionArrGroup)
-
-
-
                         }
                     }
                     if (child.name === 'groundFunc4') {
                         child.visible = false
                     }
-
-
-
-
-
-
-
+                    if (child.name === 'ohercar2'||child.name === 'ohercar1') {
+                        child.visible = false
+                        child.userData["positionRaw"] = child.position.clone()
+                    }
                 })
                 modelLoaded.current = true
                 car.scale.set(0.1, 0.1, 0.1)
@@ -301,6 +295,8 @@ function App() {
 
             // 更新 cubeCamera
             if (ground) {
+                // cardItemObj.current['groundFunc4'].visible = false
+
                 ground.visible = false  // 临时隐藏地面以避免自反射
                 cubeCamera.position.copy(camera.current.position)
                 cubeCamera.position.y = -cubeCamera.position.y
@@ -552,6 +548,19 @@ function App() {
             cardItemObj.current['pointLight'].visible = true
             cardItemObj.current['plandlight'].visible = true
 
+
+            let ohercar1 = cardItemObj.current['ohercar1'];
+            let ohercar2 = cardItemObj.current['ohercar2'];
+            ohercar1.visible = false
+            ohercar2.visible = false
+
+            if (ohercar1.userData["positionToTwen"]){
+                ohercar1.userData["positionToTwen"].kill()
+            }
+            if (ohercar2.userData["positionToTwen"]){
+                ohercar2.userData["positionToTwen"].kill()
+            }
+
         }
     }
 
@@ -793,6 +802,39 @@ function App() {
             cardItemObj.current['pointLight'].visible = false
             cardItemObj.current['plandlight'].visible = false
 
+            let ohercar1 = cardItemObj.current['ohercar1'];
+            let ohercar2 = cardItemObj.current['ohercar2'];
+            ohercar1.visible = true
+            ohercar2.visible = true
+
+            ohercar1.position.copy(ohercar1.userData["positionRaw"])
+            ohercar2.position.copy(ohercar2.userData["positionRaw"])
+
+            if (ohercar1.userData["positionToTwen"]){
+                ohercar1.userData["positionToTwen"].kill()
+            }
+            if (ohercar2.userData["positionToTwen"]){
+                ohercar2.userData["positionToTwen"].kill()
+            }
+
+            ohercar1.userData["positionToTwen"] = gsap.to(ohercar1.position,
+                {
+                z:100,
+                duration:4,
+                repeat:-1,
+                ease:"none"
+            })
+            ohercar2.userData["positionToTwen"] = gsap.to(ohercar2.position,
+                {
+                z:-100,
+                duration:4,
+                repeat:-1,
+                ease:"none"
+            })
+
+
+
+
 
 
             // 处理AI雷达
@@ -807,7 +849,8 @@ function App() {
 
                 for (let i = 0; i < aiRunScanPositionArr.length; i++) {
                     let boxBasicMaterial = new THREE.MeshBasicMaterial({
-                        color:0xffffff
+                        color:0xffffff,
+                        depthTest:false
                     });
                     let boxMash = new THREE.Mesh(boxGeo,boxBasicMaterial)
                     console.log("boxMash",boxMash)
@@ -821,7 +864,7 @@ function App() {
                     boxMash.translateZ(-1.5)
 
                     boxMash.userData["toPosition"] = boxMash.position.clone()
-                    boxMash.translateZ(1.5)
+                    boxMash.translateZ(1.2)
                     if (r==0) {
                         boxMash.userData["ease"] = 0.5
                     }

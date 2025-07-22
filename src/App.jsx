@@ -17,6 +17,11 @@ function App() {
     let plane2 = new THREE.Plane(new THREE.Vector3(0,0,1));
     let plane3 = new THREE.Plane(new THREE.Vector3(0,0,-1));
     let plane4 = new THREE.Plane(new THREE.Vector3(0,0,-1));
+    let userMouseDown = useRef(false);
+    let aiRunScanPositionArr = [];
+    let aiRunScanPositionArrLookAt = new THREE.Vector3(0,0.1,0);
+    let aiRunScanMashPositionArr = [];
+    let aiRunScanMashPositionArrGroup = new THREE.Group()
 
     let carEffect = [];
 
@@ -222,6 +227,37 @@ function App() {
                         // scene.add(planeHelper4)
                         child.visible = false
                     }
+
+
+                    if (child.name === 'aiRunScan'){
+                        if (child.geometry){
+                            let attributes = child.geometry.getAttribute("position");
+
+                            console.log("attributes",attributes)
+                            for (let i = 0; i < attributes.count; i++) {
+
+                                //把雷达的顶点位置 转换成vector3 数组 存下来
+                                let vector3 = new THREE.Vector3();
+                                vector3.fromBufferAttribute(attributes,i);
+                                aiRunScanPositionArr.push(vector3)
+                            }
+
+                            scene.add(aiRunScanMashPositionArrGroup)
+
+
+
+                        }
+                    }
+                    if (child.name === 'groundFunc4') {
+                        child.visible = false
+                    }
+
+
+
+
+
+
+
                 })
                 modelLoaded.current = true
                 car.scale.set(0.1, 0.1, 0.1)
@@ -269,6 +305,10 @@ function App() {
                 cubeCamera.position.copy(camera.current.position)
                 cubeCamera.position.y = -cubeCamera.position.y
                 cubeCamera.update(renderer, scene)
+                if (userMouseDown.current && userSwitchRef.current=== 3){
+                    cardItemObj.current['groundFunc4'].visible = true
+                }
+
                 ground.visible = true   // 恢复地面可见性
             }
 
@@ -295,12 +335,14 @@ function App() {
             if (e.target.tagName === 'BUTTON') {
                 return
             }
+            userMouseDown.current = true
             startAni()
         })
         window.addEventListener('mouseup', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 return
             }
+            userMouseDown.current = false
             endAni()
             clearAni()
         })
@@ -353,7 +395,7 @@ function App() {
             // folder.add(plane4,"constant",-1,1.1).name("X4").listen()
             gui.folders = [folder]
         }
-        openGui()
+        // openGui()
 
         // 清理
         return () => {
@@ -437,7 +479,6 @@ function App() {
                 }
             })
         }
-
         if (userSwitchRef.current===2){
             const carFrame3Main = cardItemObj.current['carFrame3Main'];
             if (carFrame3Main.userData["scanlinePlaneStartTwen"]){
@@ -499,6 +540,18 @@ function App() {
 
             // cardItemObj.current['su7'].visible = true
             // cardItemObj.current['luntaiqian'].visible = true
+        }
+
+        if (userSwitchRef.current===3){
+            cardItemObj.current['ground'].visible = true
+            cardItemObj.current['ground_shadow'].visible = true
+
+            aiRunScanMashPositionArrGroup.visible = false
+            console.log("关闭 4")
+            cardItemObj.current['groundFunc4'].visible = false
+            cardItemObj.current['pointLight'].visible = true
+            cardItemObj.current['plandlight'].visible = true
+
         }
     }
 
@@ -702,13 +755,121 @@ function App() {
 
 
             }
+
+
+
+
+
            // cardItemObj.current['su7'].visible = false
            // cardItemObj.current['luntaiqian'].visible = false
 
 
 
         }
+        if (userSwitchRef.current===3){
+            // cardItemObj.current['su7'].visible = false
+
+
+
+
+
+            cardItemObj.current['ground'].visible = false
+            cardItemObj.current['ground_shadow'].visible = false
+
+
+
+
+
+            // 处理路面
+            let groundFunc4 = cardItemObj.current['groundFunc4'];
+            groundFunc4.visible = true
+            gsap.to(groundFunc4.material.map.offset,{
+                x:groundFunc4.material.map.offset.x+1,
+                duration:1.2,
+                ease:"none",
+                repeat:-1
+            })
+
+            cardItemObj.current['pointLight'].visible = false
+            cardItemObj.current['plandlight'].visible = false
+
+
+
+            // 处理AI雷达
+            aiRunScanMashPositionArrGroup.visible = true
+
+            if (aiRunScanMashPositionArrGroup.userData['Pass']) return;
+
+            aiRunScanMashPositionArrGroup.position.y = 0.1
+
+            for (let r = 0; r < 6; r++) {
+                let boxGeo = new THREE.BoxGeometry(0.02,0.02,0.05);
+
+                for (let i = 0; i < aiRunScanPositionArr.length; i++) {
+                    let boxBasicMaterial = new THREE.MeshBasicMaterial({
+                        color:0xffffff
+                    });
+                    let boxMash = new THREE.Mesh(boxGeo,boxBasicMaterial)
+                    console.log("boxMash",boxMash)
+                    boxMash.position.copy(aiRunScanPositionArr[i])
+                    // scene.add(boxMash);
+                    aiRunScanMashPositionArrGroup.add(boxMash);
+                    aiRunScanMashPositionArr.push(boxMash)
+
+                    boxMash.lookAt(aiRunScanPositionArrLookAt)
+                    boxMash.userData["rawPosition"] = boxMash.position.clone()
+                    boxMash.translateZ(-1.5)
+
+                    boxMash.userData["toPosition"] = boxMash.position.clone()
+                    boxMash.translateZ(1.5)
+                    if (r==0) {
+                        boxMash.userData["ease"] = 0.5
+                    }
+                    if (r==1) {
+                        boxMash.userData["ease"] = 1
+                    }
+                    if (r==2) {
+                        boxMash.userData["ease"] = 1.5
+                    }
+                    if (r==3) {
+                        boxMash.userData["ease"] = 3
+                    }
+                    if (r==4) {
+                        boxMash.userData["ease"] = 4
+                    }
+                    if (r==5) {
+                        boxMash.userData["ease"] = 4.5
+                    }
+
+
+                    boxMash.visible = false
+                    // boxMash.userData["delay"] = boxMash.position.clone()
+                }
+
+                for (let i = 0; i < aiRunScanMashPositionArr.length; i++) {
+                    gsap.to(aiRunScanMashPositionArr[i].position,{
+                        x: aiRunScanMashPositionArr[i].userData["toPosition"].x,
+                        y: aiRunScanMashPositionArr[i].userData["toPosition"].y,
+                        z: aiRunScanMashPositionArr[i].userData["toPosition"].z,
+                        duration:5,
+                        ease:'none',
+                        delay:aiRunScanMashPositionArr[i].userData["ease"],
+                        repeat:-1,
+                        onStart:()=>{
+                            aiRunScanMashPositionArr[i].visible = true
+                        }
+                    })
+                }
+            }
+
+            aiRunScanMashPositionArrGroup.userData['Pass'] = true
+
+
+
+        }
+
     }
+
 
     const switchRunModel = ()=>{
         if (!modelLoaded.current) return

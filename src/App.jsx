@@ -12,18 +12,23 @@ import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 function App() {
 
 
+    // 汽车切割
     let plane1 = new THREE.Plane(new THREE.Vector3(0,0,1));
-
+    // 白汽车左侧切割
     let plane2 = new THREE.Plane(new THREE.Vector3(0,0,1));
+    // 白汽车右侧切割
     let plane3 = new THREE.Plane(new THREE.Vector3(0,0,-1));
+    // 流光效果切割
     let plane4 = new THREE.Plane(new THREE.Vector3(0,0,-1));
+
     let userMouseDown = useRef(false);
     let aiRunScanPositionArr = [];
     let aiRunScanPositionArrLookAt = new THREE.Vector3(0,0.1,0);
-    let aiRunScanMashPositionArr = [];
+    let aiRunScanMashPositionArr = useRef([]);
     let aiRunScanMashPositionArrGroup = new THREE.Group()
 
     let carEffect = [];
+
 
     const mountRef = useRef(null)
     const initRef = useRef(false)  // 添加初始化标记
@@ -43,9 +48,6 @@ function App() {
         if (!mountRef.current || initRef.current) return  // 检查是否已经初始化
         initRef.current = true  // 标记为已初始化
         console.log("初始化");
-
-
-
 
         // 场景设置
         const scene = new THREE.Scene()
@@ -128,11 +130,9 @@ function App() {
 
 
                     if (child.name === "su7") {
-                        console.log("su7",child);
                         plane1.constant = 1.1
                         child.traverse((item) => {
                             if (item.name === "carMain"){
-                                console.log("carMain",item)
                                 item.traverse((carMainItem)=>{
                                     if (carMainItem.material){
                                         // carMainItem.material.color = "#FFFFFF"
@@ -155,7 +155,6 @@ function App() {
                                 })
                             }
                         })
-                        console.log("1111carEffect",carEffect)
                         // let planeHelper1 = new THREE.PlaneHelper(plane1,2,0xffff00);
                         // planeHelper1.position
                         // let planeHelper2 = new THREE.PlaneHelper(plane2,2,0xffff00);
@@ -169,9 +168,7 @@ function App() {
                     if (child.name == "su7WhiteRoot") {
                         plane2.constant = 1.02
                         plane3.constant = -1.03
-                        console.log("su7White",child.name)
                         child.traverse((itemRoot) => {
-                            console.log("itemRoot",itemRoot.name)
                             if (itemRoot.material){
                                 itemRoot.material.alphaToCoverage  = true
                                 itemRoot.material.clippingPlanes = [plane2,plane3]
@@ -217,7 +214,6 @@ function App() {
                     if (child.name === "carFrame3Main") {
                         plane4.constant = 1.15
                         child.traverse((itemRoot) => {
-                            console.log("itemRoot",itemRoot.name)
                             if (itemRoot.material){
                                 itemRoot.material.alphaToCoverage  = true
                                 itemRoot.material.clippingPlanes = [plane4]
@@ -232,8 +228,6 @@ function App() {
                     if (child.name === 'aiRunScan'){
                         if (child.geometry){
                             let attributes = child.geometry.getAttribute("position");
-
-                            console.log("attributes",attributes)
                             for (let i = 0; i < attributes.count; i++) {
 
                                 //把雷达的顶点位置 转换成vector3 数组 存下来
@@ -248,7 +242,7 @@ function App() {
                     if (child.name === 'groundFunc4') {
                         child.visible = false
                     }
-                    if (child.name === 'ohercar2'||child.name === 'ohercar1') {
+                    if (child.name === 'othercar2'||child.name === 'othercar1') {
                         child.visible = false
                         child.userData["positionRaw"] = child.position.clone()
                     }
@@ -296,7 +290,6 @@ function App() {
             // 更新 cubeCamera
             if (ground) {
                 // cardItemObj.current['groundFunc4'].visible = false
-
                 ground.visible = false  // 临时隐藏地面以避免自反射
                 cubeCamera.position.copy(camera.current.position)
                 cubeCamera.position.y = -cubeCamera.position.y
@@ -304,8 +297,34 @@ function App() {
                 if (userMouseDown.current && userSwitchRef.current=== 3){
                     cardItemObj.current['groundFunc4'].visible = true
                 }
-
                 ground.visible = true   // 恢复地面可见性
+            }
+
+            if (userMouseDown.current && userSwitchRef.current=== 3 && aiRunScanMashPositionArr.current){
+                // 1) 重置所有为白色
+                const carPos1 = cardItemObj.current["othercar1"].position.clone();
+                const carPos2 = cardItemObj.current["othercar2"].position.clone();
+
+                // 2) 找出距离 < 12 的那些，再单独高亮为绿
+                aiRunScanMashPositionArr.current.forEach(mesh => {
+
+                    const dist1 = carPos1.distanceTo(mesh.position);
+                    const dist2 = carPos2.distanceTo(mesh.position);
+
+                    console.log("dist2",dist2)
+
+                    if ((dist1 < 12||dist2 < 13.5) && mesh.material.color.getHexString()!=="0x00ff00") {
+                        mesh.material.color.set(0x00ff00);
+                        mesh.scale.setZ(1.3)
+                    }
+                    if (!(dist1 < 12||dist2<13.5) && mesh.material.color.getHexString()!=="0xffffff" ){
+                        mesh.material.color.set(0xffffff);
+                        mesh.scale.setZ(1)
+
+                    }
+
+                    mesh.material.needsUpdate = true; // 关键！
+                });
             }
 
             // renderer.render(scene, camera)
@@ -543,22 +562,21 @@ function App() {
             cardItemObj.current['ground_shadow'].visible = true
 
             aiRunScanMashPositionArrGroup.visible = false
-            console.log("关闭 4")
             cardItemObj.current['groundFunc4'].visible = false
             cardItemObj.current['pointLight'].visible = true
             cardItemObj.current['plandlight'].visible = true
 
 
-            let ohercar1 = cardItemObj.current['ohercar1'];
-            let ohercar2 = cardItemObj.current['ohercar2'];
-            ohercar1.visible = false
-            ohercar2.visible = false
+            let othercar1 = cardItemObj.current['othercar1'];
+            let othercar2 = cardItemObj.current['othercar2'];
+            othercar1.visible = false
+            othercar2.visible = false
 
-            if (ohercar1.userData["positionToTwen"]){
-                ohercar1.userData["positionToTwen"].kill()
+            if (othercar1.userData["positionToTwen"]){
+                othercar1.userData["positionToTwen"].kill()
             }
-            if (ohercar2.userData["positionToTwen"]){
-                ohercar2.userData["positionToTwen"].kill()
+            if (othercar2.userData["positionToTwen"]){
+                othercar2.userData["positionToTwen"].kill()
             }
 
         }
@@ -802,32 +820,32 @@ function App() {
             cardItemObj.current['pointLight'].visible = false
             cardItemObj.current['plandlight'].visible = false
 
-            let ohercar1 = cardItemObj.current['ohercar1'];
-            let ohercar2 = cardItemObj.current['ohercar2'];
-            ohercar1.visible = true
-            ohercar2.visible = true
+            let othercar1 = cardItemObj.current['othercar1'];
+            let othercar2 = cardItemObj.current['othercar2'];
+            othercar1.visible = true
+            othercar2.visible = true
 
-            ohercar1.position.copy(ohercar1.userData["positionRaw"])
-            ohercar2.position.copy(ohercar2.userData["positionRaw"])
+            othercar1.position.copy(othercar1.userData["positionRaw"])
+            othercar2.position.copy(othercar2.userData["positionRaw"])
 
-            if (ohercar1.userData["positionToTwen"]){
-                ohercar1.userData["positionToTwen"].kill()
+            if (othercar1.userData["positionToTwen"]){
+                othercar1.userData["positionToTwen"].kill()
             }
-            if (ohercar2.userData["positionToTwen"]){
-                ohercar2.userData["positionToTwen"].kill()
+            if (othercar2.userData["positionToTwen"]){
+                othercar2.userData["positionToTwen"].kill()
             }
 
-            ohercar1.userData["positionToTwen"] = gsap.to(ohercar1.position,
+            othercar1.userData["positionToTwen"] = gsap.to(othercar1.position,
                 {
-                z:100,
-                duration:4,
+                z:30,
+                duration:10,
                 repeat:-1,
                 ease:"none"
             })
-            ohercar2.userData["positionToTwen"] = gsap.to(ohercar2.position,
+            othercar2.userData["positionToTwen"] = gsap.to(othercar2.position,
                 {
-                z:-100,
-                duration:4,
+                z:-30,
+                duration:5,
                 repeat:-1,
                 ease:"none"
             })
@@ -844,20 +862,22 @@ function App() {
 
             aiRunScanMashPositionArrGroup.position.y = 0.1
 
-            for (let r = 0; r < 6; r++) {
-                let boxGeo = new THREE.BoxGeometry(0.02,0.02,0.05);
+            let boxGeo = new THREE.BoxGeometry(0.02,0.02,0.05);
+
+            for (let r = 0; r < 4; r++) {
 
                 for (let i = 0; i < aiRunScanPositionArr.length; i++) {
-                    let boxBasicMaterial = new THREE.MeshBasicMaterial({
-                        color:0xffffff,
-                        depthTest:false
-                    });
-                    let boxMash = new THREE.Mesh(boxGeo,boxBasicMaterial)
-                    console.log("boxMash",boxMash)
+
+                    let boxMash = new THREE.Mesh(boxGeo,
+                        new THREE.MeshBasicMaterial({
+                            color:0xffffff,
+                            depthTest:false
+                        })
+                    )
                     boxMash.position.copy(aiRunScanPositionArr[i])
                     // scene.add(boxMash);
                     aiRunScanMashPositionArrGroup.add(boxMash);
-                    aiRunScanMashPositionArr.push(boxMash)
+                    aiRunScanMashPositionArr.current.push(boxMash)
 
                     boxMash.lookAt(aiRunScanPositionArrLookAt)
                     boxMash.userData["rawPosition"] = boxMash.position.clone()
@@ -877,33 +897,27 @@ function App() {
                     if (r==3) {
                         boxMash.userData["ease"] = 3
                     }
-                    if (r==4) {
-                        boxMash.userData["ease"] = 4
-                    }
-                    if (r==5) {
-                        boxMash.userData["ease"] = 4.5
-                    }
-
 
                     boxMash.visible = false
                     // boxMash.userData["delay"] = boxMash.position.clone()
                 }
 
-                for (let i = 0; i < aiRunScanMashPositionArr.length; i++) {
-                    gsap.to(aiRunScanMashPositionArr[i].position,{
-                        x: aiRunScanMashPositionArr[i].userData["toPosition"].x,
-                        y: aiRunScanMashPositionArr[i].userData["toPosition"].y,
-                        z: aiRunScanMashPositionArr[i].userData["toPosition"].z,
+                for (let i = 0; i < aiRunScanMashPositionArr.current.length; i++) {
+                    gsap.to(aiRunScanMashPositionArr.current[i].position,{
+                        x: aiRunScanMashPositionArr.current[i].userData["toPosition"].x,
+                        y: aiRunScanMashPositionArr.current[i].userData["toPosition"].y,
+                        z: aiRunScanMashPositionArr.current[i].userData["toPosition"].z,
                         duration:5,
                         ease:'none',
-                        delay:aiRunScanMashPositionArr[i].userData["ease"],
+                        delay:aiRunScanMashPositionArr.current[i].userData["ease"],
                         repeat:-1,
                         onStart:()=>{
-                            aiRunScanMashPositionArr[i].visible = true
+                            aiRunScanMashPositionArr.current[i].visible = true
                         }
                     })
                 }
             }
+
 
             aiRunScanMashPositionArrGroup.userData['Pass'] = true
 
@@ -921,7 +935,6 @@ function App() {
             cardItemObj.current['carsizeMain'].material.transparent = true
             if (userSwitchRef.current === 1) {
                 cardItemObj.current['carsizeMain'].visible = true
-                console.log("显示")
                 gsap.to(cardItemObj.current['carsizeMain'].material, {
                     opacity: 1,
                     duration: 0.6,
@@ -945,7 +958,6 @@ function App() {
 
             cardItemObj.current['scanline'].material.transparent = true
 
-            console.log("cardItemObj.current['scanline']",cardItemObj.current['scanline'])
             if (userSwitchRef.current === 1) {
                 cardItemObj.current['scanline'].visible = false
                 cardItemObj.current['scanline'].opacity = 0
@@ -1036,19 +1048,16 @@ function App() {
     function lengthCar() {
         userSwitchRef.current = 1
         switchRunModel()
-        console.log("车身")
     }
 
     function tailwindCar() {
         userSwitchRef.current = 2
         switchRunModel()
-        console.log("风阻")
     }
 
     function aiControllerCar() {
         userSwitchRef.current = 3 // 切换
         switchRunModel()
-        console.log("车身")
     }
 
     return (

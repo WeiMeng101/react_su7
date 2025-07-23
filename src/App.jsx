@@ -36,7 +36,7 @@ function App() {
     const [clickCount, setClickCount] = useState(0)
     // const [modelLoaded, setModelLoaded] = useState(false)
     let modelLoaded = useRef(false)
-    // const [userSwitchRef, setUserSwitchRef] = useState(0)
+    const [userSwitchState, setUserSwitchState] = useState(0)
     let userSwitchRef = useRef(0)
     let cardItemObj = useRef(null)
     let camera = useRef(new THREE.PerspectiveCamera(
@@ -364,12 +364,33 @@ function App() {
 
 
         window.addEventListener('mousedown', (e) => {
+
             if (e.target.tagName === 'BUTTON') {
                 return
             }
             userMouseDown.current = true
             startAni()
         })
+
+        window.addEventListener('touchstart', (e) => {
+
+            if (e.target.tagName === 'BUTTON') {
+                return
+            }
+            userMouseDown.current = true
+            startAni()
+        })
+
+        window.addEventListener('touchend', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                return
+            }
+            userMouseDown.current = false
+            endAni()
+            clearAni()
+        })
+
+
         window.addEventListener('mouseup', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 return
@@ -907,7 +928,7 @@ function App() {
                     boxMash.translateZ(-1.5)
 
                     boxMash.userData["toPosition"] = boxMash.position.clone()
-                    boxMash.translateZ(1.2)
+                    boxMash.translateZ(1.5)
                     if (r==0) {
                         boxMash.userData["ease"] = 0.5
                     }
@@ -915,10 +936,10 @@ function App() {
                         boxMash.userData["ease"] = 1
                     }
                     if (r==2) {
-                        boxMash.userData["ease"] = 1.5
+                        boxMash.userData["ease"] = 2
                     }
                     if (r==3) {
-                        boxMash.userData["ease"] = 3
+                        boxMash.userData["ease"] = 3.5
                     }
 
                     boxMash.visible = false
@@ -941,17 +962,14 @@ function App() {
                 }
             }
 
-
             aiRunScanMashPositionArrGroup.userData['Pass'] = true
 
-
-
         }
-
     }
 
 
-    const switchRunModel = ()=>{
+    const switchRunModel = ( num )=>{
+        setUserSwitchState(num)
         if (!modelLoaded.current) return
 
         if (cardItemObj.current['carsizeMain']) {
@@ -1065,22 +1083,22 @@ function App() {
 
     function runCar() {
         userSwitchRef.current = 0
-        switchRunModel()
+        switchRunModel(0)
     }
 
     function lengthCar() {
         userSwitchRef.current = 1
-        switchRunModel()
+        switchRunModel(1)
     }
 
     function tailwindCar() {
         userSwitchRef.current = 2
-        switchRunModel()
+        switchRunModel(2)
     }
 
     function aiControllerCar() {
-        userSwitchRef.current = 3 // 切换
-        switchRunModel()
+        userSwitchRef.current = 3
+        switchRunModel(3)
     }
 
     return (
@@ -1089,18 +1107,51 @@ function App() {
             <div className="absolute z-10 h-full right-0 ">
                 <div className="flex items-center justify-end h-full ">
                     <div className="flex-row p-6">
-                        <button className="block select-none" onClick={runCar}>
+                        <div className="block select-none"
+                        style={
+                            userSwitchState===0?{
+                            color:"#ffffff"
+                        }:{
+                            color:"#888888"
+                        }}
+                             onClick={runCar}>
                             驾驶
-                        </button>
-                        <button className="block select-none pt-12" onClick={lengthCar}>
+                        </div>
+                        <div className="block select-none pt-12 "
+
+                                style={
+                                    userSwitchState===1?{
+                                        color:"#ffffff"
+                                    }:{
+                                        color:"#888888"
+                                    }}
+
+                                onClick={lengthCar}>
                             车身
-                        </button>
-                        <button className="block select-none pt-12" onClick={tailwindCar}>
+                        </div>
+                        <div className="block select-none pt-12"
+                                style={
+                                    userSwitchState===2?{
+                                        color:"#ffffff"
+                                    }:{
+                                        color:"#888888"
+                                    }}
+
+                                onClick={tailwindCar}>
                             风阻
-                        </button>
-                        <button className="block select-none pt-12" onClick={aiControllerCar}>
+                        </div>
+                        <div
+
+                            style={
+                                userSwitchState===3?{
+                                    color:"#ffffff"
+                                }:{
+                                    color:"#888888"
+                                }}
+
+                            className="block select-none pt-12" onClick={aiControllerCar}>
                             智驾
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>

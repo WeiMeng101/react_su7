@@ -8,6 +8,7 @@ import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer.j
 import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass.js";
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+import {DRACOLoader} from "three/examples/jsm/loaders/DRACOLoader.js";
 
 function App() {
 
@@ -53,16 +54,23 @@ function App() {
         const scene = new THREE.Scene()
 
         scene.background = new THREE.Color(0x222222)
-        scene.fog = new THREE.FogExp2('#000000', 0.05)
+        scene.fog = new THREE.FogExp2('#000000', 0.2)
 
         // 相机设置
         camera.current.position.set(1, 1, 1)
         camera.current.lookAt(0, 0, 0)
 
         // 渲染器设置
-        const renderer = new THREE.WebGLRenderer({antialias: true})
+        const renderer = new THREE.WebGLRenderer(
+            {
+                antialias: true,      // 抗锯齿
+                precision: 'highp',   // 着色器精度
+                powerPreference: 'high-performance' // GPU性能模式（default/high-performance/low-power）
+            }
+
+        )
         renderer.setSize(window.innerWidth, window.innerHeight)
-        renderer.setPixelRatio(window.devicePixelRatio)
+        renderer.setPixelRatio(1.2);
         // renderer.shadowMap.enabled = true // 开启阴影
         // renderer.shadowMap.type = THREE.PCFSoftShadowMap // 设置阴影类型
         mountRef.current.appendChild(renderer.domElement)
@@ -80,13 +88,16 @@ function App() {
         controls.minDistance = 1.8
 
         // 存储可点击的对象
-        const clickableObjects = []
+        // const clickableObjects = []
 
+        let gltfLoader = new GLTFLoader();
+        let dracoLoader = new DRACOLoader();
 
-        const gltfloader = new GLTFLoader()
-        //  gltfloader.setDRACOLoader(dracoLoader)
+        dracoLoader.setDecoderPath("assets/draco/")
+        gltfLoader.setDRACOLoader(dracoLoader)
+
         let ground;
-        gltfloader.load(
+        gltfLoader.load(
             '/assets/model/xiaomi.glb',
             (gltf) => {
                 const car = gltf.scene
@@ -96,13 +107,15 @@ function App() {
                     cardItemObj.current[child.name] = child
                     if (child.type === 'Mesh') {
                         // child.material.envMap = cubeRenderTarget.texture;
-                        child.material = new THREE.MeshStandardMaterial({
-                            ...child.material,
-                            envMap: cubeRenderTarget.texture,
-                            envMapIntensity: 5,  // 增加环境贴图强度
-                            metalness: 0.6,        // 调整金属度
-                            roughness: 0.1,        // 调整粗糙度
-                        });
+                        // child.material = new THREE.MeshStandardMaterial({
+                        //     ...child.material,
+                        //     envMap: cubeRenderTarget.texture,
+                        //     envMapIntensity: 5,  // 增加环境贴图强度
+                        //     metalness: 0.6,        // 调整金属度
+                        //     roughness: 0.1,        // 调整粗糙度
+                        // });
+                        child.material.envMap = cubeRenderTarget.texture
+
                         // child.visible = false;
                     }
 
@@ -242,7 +255,7 @@ function App() {
                     if (child.name === 'groundFunc4') {
                         child.visible = false
                     }
-                    if (child.name === 'othercar2'||child.name === 'othercar1') {
+                    if (child.name === 'othercar1'||child.name === 'othercar2') {
                         child.visible = false
                         child.userData["positionRaw"] = child.position.clone()
                     }
@@ -289,29 +302,34 @@ function App() {
 
             // 更新 cubeCamera
             if (ground) {
-                // cardItemObj.current['groundFunc4'].visible = false
+                cardItemObj.current['groundFunc4'].visible = false
                 ground.visible = false  // 临时隐藏地面以避免自反射
                 cubeCamera.position.copy(camera.current.position)
-                cubeCamera.position.y = -cubeCamera.position.y
+                cubeCamera.position.y = -cubeCamera.position.y // 设置反射立方体相机位置
                 cubeCamera.update(renderer, scene)
+                   // 恢复地面可见性
+
                 if (userMouseDown.current && userSwitchRef.current=== 3){
                     cardItemObj.current['groundFunc4'].visible = true
+                    cardItemObj.current['ground_shader'].visible = false
+                    ground.visible = false
+                }else {
+                    ground.visible = true
+                    cardItemObj.current['ground_shader'].visible = true
+
                 }
-                ground.visible = true   // 恢复地面可见性
             }
 
             if (userMouseDown.current && userSwitchRef.current=== 3 && aiRunScanMashPositionArr.current){
+
                 // 1) 重置所有为白色
                 const carPos1 = cardItemObj.current["othercar1"].position.clone();
                 const carPos2 = cardItemObj.current["othercar2"].position.clone();
 
                 // 2) 找出距离 < 12 的那些，再单独高亮为绿
                 aiRunScanMashPositionArr.current.forEach(mesh => {
-
                     const dist1 = carPos1.distanceTo(mesh.position);
                     const dist2 = carPos2.distanceTo(mesh.position);
-
-                    console.log("dist2",dist2)
 
                     if ((dist1 < 12||dist2 < 13.5) && mesh.material.color.getHexString()!=="0x00ff00") {
                         mesh.material.color.set(0x00ff00);
@@ -320,7 +338,6 @@ function App() {
                     if (!(dist1 < 12||dist2<13.5) && mesh.material.color.getHexString()!=="0xffffff" ){
                         mesh.material.color.set(0xffffff);
                         mesh.scale.setZ(1)
-
                     }
 
                     mesh.material.needsUpdate = true; // 关键！
@@ -579,6 +596,11 @@ function App() {
                 othercar2.userData["positionToTwen"].kill()
             }
 
+            // aiRunScanMashPositionArr.current.forEach(item=>{
+            //     if (item.userData["toPositionTwen"]) {
+            //         item.userData["toPositionTwen"].kill()
+            //     }
+            // })
         }
     }
 
@@ -868,11 +890,12 @@ function App() {
 
                 for (let i = 0; i < aiRunScanPositionArr.length; i++) {
 
-                    let boxMash = new THREE.Mesh(boxGeo,
+                    let boxMash = new THREE.InstancedMesh(boxGeo,
                         new THREE.MeshBasicMaterial({
                             color:0xffffff,
                             depthTest:false
-                        })
+                        }),
+                        1000
                     )
                     boxMash.position.copy(aiRunScanPositionArr[i])
                     // scene.add(boxMash);
@@ -903,7 +926,7 @@ function App() {
                 }
 
                 for (let i = 0; i < aiRunScanMashPositionArr.current.length; i++) {
-                    gsap.to(aiRunScanMashPositionArr.current[i].position,{
+                    aiRunScanMashPositionArr.current[i].userData["toPositionTwen"] = gsap.to(aiRunScanMashPositionArr.current[i].position,{
                         x: aiRunScanMashPositionArr.current[i].userData["toPosition"].x,
                         y: aiRunScanMashPositionArr.current[i].userData["toPosition"].y,
                         z: aiRunScanMashPositionArr.current[i].userData["toPosition"].z,

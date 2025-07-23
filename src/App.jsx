@@ -522,12 +522,20 @@ function App() {
         })
 
         if (cardItemObj.current['scanline']) {
-            gsap.to(cardItemObj.current['scanline'].material, {
+            cardItemObj.current['scanline'].userData["scanlineOpacityTwenEnd"] = gsap.to(cardItemObj.current['scanline'].material, {
                 opacity: 0,
                 duration: 1,
                 repeat: 0,
                 ease:"none",
+                onStart:()=>{
+                    if (cardItemObj.current['scanline'].userData["scanlineOpacityTwenStart"]){
+                        cardItemObj.current['scanline'].userData["scanlineOpacityTwenStart"].kill()
+                    }
+                },
                 onComplete:()=>{
+                    if (cardItemObj.current['scanline'].userData["scanlineOpacityTwenEnd"]){
+                        cardItemObj.current['scanline'].userData["scanlineOpacityTwenEnd"].kill()
+                    }
                     cardItemObj.current['scanline'].visible = false
                 }
             })
@@ -743,7 +751,7 @@ function App() {
             const currentElement = cardItemObj.current['scanline'];
             if (currentElement) {
                 currentElement.visible = true
-                currentElement.userData["scanlineOpacityTwen"] = gsap.to(currentElement.material, {
+                currentElement.userData["scanlineOpacityTwenStart"] = gsap.to(currentElement.material, {
                     opacity: 1,
                     duration: 1,
                     repeat: 0,
@@ -1072,9 +1080,6 @@ function App() {
             cardItemObj.current['luntaihou'].userData['luntaihouCompleteTwen'].kill() // 立即停止并销毁这个动画
         }
 
-        if (cardItemObj.current['scanline'].userData['scanlineOpacityTwen']) {
-            cardItemObj.current['scanline'].userData['scanlineOpacityTwen'].kill() // 立即停止并销毁这个动画
-        }
 
 
         // 需要重新管理

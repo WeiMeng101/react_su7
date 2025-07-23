@@ -634,6 +634,11 @@ function App() {
     }
 
     function startAni() {
+
+        if (cardItemObj.current['plandlight']){
+            cardItemObj.current['plandlight'].visible = true
+        }
+
         if (!modelLoaded.current) return
         gsap.to(camera.current, {
             fov: 95,
@@ -720,6 +725,11 @@ function App() {
                 })
         }
         if (userSwitchRef.current===0){
+
+            if (cardItemObj.current['plandlight']){
+                cardItemObj.current['plandlight'].visible = false
+            }
+
             if (cardItemObj.current['flyline']) {
                 const flyline = cardItemObj.current['flyline']
                 flyline.userData['flylineTwen'] =

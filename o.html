@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Three.js GPU 布料模拟 (最终修复版)</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <style>
+    body { margin: 0; background-color: #000; color: #fff; font-family: Monospace; font-size: 13px; line-height: 24px; overscroll-behavior: none; }
+    a { color: #ff0; text-decoration: none; }
+    #info { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 100; display:block; }
+  </style>
+</head>
+<body>
+<div id="info">
+  Three.js GPU 布料模拟<br/>
+  在屏幕上拖动鼠标来移动布料
+</div>
+
+<script type="importmap">
+  {
+      "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+  }
+</script>
+
+<!-- 统一的计算着色器 -->
+<script type="x-shader/x-fragment" id="computationFragmentShader">
+  uniform float pass;
+
+  uniform float delta;
+  uniform vec3 gravity;
+  uniform float mass;
+  uniform float mouseActive;
+  uniform vec3 mousePosition;
+  uniform vec2 constrainedUV;
+
+  uniform float restDistance;
+
+  const float DAMPING = 0.03;
+  const float DRAG = 1.0 - DAMPING;
+
+  void main() {
+      vec2 uv = gl_FragCoord.xy / resolution.xy;
+      vec3 newPosition;
+
+      if (pass < 0.5) { // 物理计算模式
+          vec3 position = texture2D(texturePosition, uv).xyz;
+          vec3 prevPosition = texture2D(texturePreviousPosition, uv).xyz;
+
+          if (uv.y > 0.999) {
+              newPosition = position;
+          } else if (mouseActive > 0.5 && distance(uv, constrainedUV) < 0.015) {
+              newPosition = mousePosition;
+          } else {
+              vec3 velocity = position - prevPosition;
+              newPosition = position + velocity * DRAG + gravity * mass * delta * delta;
+          }
+
+      } else { // 弹簧约束模式
+          vec3 position = texture2D(texturePosition, uv).xyz;
+          newPosition = position;
+
+          vec2 texelSize = 1.0 / resolution.xy;
+
+          vec3 neighbor1 = texture2D(texturePosition, uv + vec2(texelSize.x, 0.0)).xyz;
+          vec3 neighbor2 = texture2D(texturePosition, uv + vec2(-texelSize.x, 0.0)).xyz;
+          vec3 neighbor3 = texture2D(texturePosition, uv + vec2(0.0, texelSize.y)).xyz;
+          vec3 neighbor4 = texture2D(texturePosition, uv + vec2(0.0, -texelSize.y)).xyz;
+
+          vec3 diff;
+          float diffLength;
+
+          // ** 关键修复：防止除以零 **
+          diff = neighbor1 - newPosition;
+          diffLength = length(diff);
+          if (diffLength > 0.0001) { // 安全检查
+              diff *= (restDistance - diffLength) / diffLength;
+              newPosition += diff * 0.5;
+          }
+
+          diff = neighbor2 - newPosition;
+          diffLength = length(diff);
+          if (diffLength > 0.0001) { // 安全检查
+              diff *= (restDistance - diffLength) / diffLength;
+              newPosition += diff * 0.5;
+          }
+
+          diff = neighbor3 - newPosition;
+          diffLength = length(diff);
+          if (diffLength > 0.0001) { // 安全检查
+              diff *= (restDistance - diffLength) / diffLength;
+              newPosition += diff * 0.5;
+          }
+
+          diff = neighbor4 - newPosition;
+          diffLength = length(diff);
+          if (diffLength > 0.0001) { // 安全检查
+              diff *= (restDistance - diffLength) / diffLength;
+              newPosition += diff * 0.5;
+          }
+      }
+
+      gl_FragColor = vec4(newPosition, 1.0);
+  }
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { GPUComputationRenderer } from 'three/addons/misc/GPUComputationRenderer.js';
+
+  const CLOTH_WIDTH = 10;
+  const CLOTH_SEGMENTS = 31;
+  const REST_DISTANCE = CLOTH_WIDTH / CLOTH_SEGMENTS;
+  const MASS = 0.1;
+  const GRAVITY = -9.8;
+  const CONSTRAINT_ITERATIONS = 5;
+  const MOUSE_INFLUENCE_DISTANCE = 10;
+
+  let scene, camera, renderer, clock, controls;
+  let clothMaterial;
+  let clothMesh; // ** 修复 #2: 确保 clothMesh 是全局可访问的 **
+  let gpuCompute;
+  let positionVariable, previousPositionVariable;
+
+  const mouse = new THREE.Vector2();
+  const raycaster = new THREE.Raycaster();
+  let isPointerDown = false;
+  const tempVec3 = new THREE.Vector3();
+  let dragOffset = new THREE.Vector3();
+
+  init();
+  animate();
+
+  function init() {
+    scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x000000, 5, 25);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 5, 15);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+    clock = new THREE.Clock();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(5, 10, 7.5);
+    scene.add(dirLight);
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    initGpuCompute();
+    initCloth();
+
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointerup', onPointerUp);
+  }
+
+  function initGpuCompute() {
+    gpuCompute = new GPUComputationRenderer(CLOTH_SEGMENTS, CLOTH_SEGMENTS, renderer);
+    if (renderer.capabilities.isWebGL2 === false) {
+      gpuCompute.setDataType(THREE.HalfFloatType);
+    }
+
+    const positionTexture = gpuCompute.createTexture();
+    const previousPositionTexture = gpuCompute.createTexture();
+    fillPositionTexture(positionTexture);
+    fillPositionTexture(previousPositionTexture);
+
+    const computationShader = document.getElementById('computationFragmentShader').textContent;
+    positionVariable = gpuCompute.addVariable('texturePosition', computationShader, positionTexture);
+
+    previousPositionVariable = gpuCompute.addVariable('texturePreviousPosition', `void main() { gl_FragColor = texture2D( texturePosition, gl_FragCoord.xy / resolution.xy ); }`, previousPositionTexture);
+
+    gpuCompute.setVariableDependencies(positionVariable, [positionVariable, previousPositionVariable]);
+    gpuCompute.setVariableDependencies(previousPositionVariable, [positionVariable]);
+
+    const uniforms = positionVariable.material.uniforms;
+    uniforms['pass'] = { value: 0.0 };
+    uniforms['delta'] = { value: 0.0 };
+    uniforms['mass'] = { value: MASS };
+    uniforms['gravity'] = { value: new THREE.Vector3(0, GRAVITY, 0) };
+    uniforms['mouseActive'] = { value: 0.0 };
+    uniforms['mousePosition'] = { value: new THREE.Vector3() };
+    uniforms['constrainedUV'] = { value: new THREE.Vector2() };
+    uniforms['restDistance'] = { value: REST_DISTANCE };
+
+    const error = gpuCompute.init();
+    if (error !== null) console.error(error);
+  }
+
+  function fillPositionTexture(texture) {
+    const data = texture.image.data;
+    const topY = 8;
+    for (let i = 0; i < data.length; i += 4) {
+      const u = (i / 4) % CLOTH_SEGMENTS;
+      const v = Math.floor((i / 4) / CLOTH_SEGMENTS);
+
+      data[i] = (u / (CLOTH_SEGMENTS - 1) - 0.5) * CLOTH_WIDTH;
+      data[i + 1] = topY;
+      data[i + 2] = (v / (CLOTH_SEGMENTS - 1) - 0.5) * CLOTH_WIDTH;
+      data[i + 3] = 1.0;
+    }
+  }
+
+  function initCloth() {
+    const clothGeometry = new THREE.PlaneGeometry(CLOTH_WIDTH, CLOTH_WIDTH, CLOTH_SEGMENTS - 1, CLOTH_SEGMENTS - 1);
+
+    clothMaterial = new THREE.MeshPhongMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      wireframe: true,
+      onBeforeCompile: (shader) => {
+        shader.uniforms.texturePosition = { value: null };
+        shader.vertexShader = 'uniform sampler2D texturePosition;\n' + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `#include <begin_vertex>\n\t\t\t\t vec4 pos = texture2D(texturePosition, uv);\n\t\t\t\t transformed = pos.xyz;`
+        );
+        clothMaterial.userData.shader = shader;
+      }
+    });
+
+    // ** 修复 #2: 移除 const, 将实例赋给全局变量 **
+    clothMesh = new THREE.Mesh(clothGeometry, clothMaterial);
+    scene.add(clothMesh);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const delta = Math.min(clock.getDelta(), 0.02);
+    const uniforms = positionVariable.material.uniforms;
+
+    // --- GPU 计算 ---
+    uniforms['pass'].value = 0.0;
+    uniforms['delta'].value = delta;
+
+    if (isPointerDown) {
+      raycaster.setFromCamera(mouse, camera);
+      raycaster.ray.at(MOUSE_INFLUENCE_DISTANCE, tempVec3);
+      uniforms['mousePosition'].value.copy(tempVec3).add(dragOffset);
+    }
+    gpuCompute.compute(positionVariable);
+
+    uniforms['pass'].value = 1.0;
+    for (let i = 0; i < CONSTRAINT_ITERATIONS; i++) {
+      gpuCompute.compute(positionVariable);
+    }
+
+    gpuCompute.compute(previousPositionVariable);
+    // --- 计算结束 ---
+
+    if(clothMaterial.userData.shader){
+      clothMaterial.userData.shader.uniforms.texturePosition.value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  function onPointerMove(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  }
+
+  function onPointerDown(event) {
+    raycaster.setFromCamera(mouse, camera);
+    // ** 修复 #2: 现在可以直接使用全局的 clothMesh **
+    const intersects = raycaster.intersectObject(clothMesh);
+
+    if (intersects.length > 0) {
+      isPointerDown = true;
+      controls.enabled = false;
+
+      const intersect = intersects[0];
+      raycaster.ray.at(MOUSE_INFLUENCE_DISTANCE, tempVec3);
+      dragOffset.subVectors(intersect.point, tempVec3);
+
+      const uniforms = positionVariable.material.uniforms;
+      uniforms['mouseActive'].value = 1.0;
+      uniforms['constrainedUV'].value.copy(intersect.uv);
+    }
+  }
+
+  function onPointerUp(event) {
+    isPointerDown = false;
+    controls.enabled = true;
+    positionVariable.material.uniforms['mouseActive'].value = 0.0;
+  }
+</script>
+</body>
+</html>

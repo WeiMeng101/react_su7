@@ -31,6 +31,8 @@ function App() {
     let carEffect = [];
 
 
+
+
     const mountRef = useRef(null)
     const initRef = useRef(false)  // 添加初始化标记
     const [clickCount, setClickCount] = useState(0)
@@ -70,7 +72,7 @@ function App() {
 
         )
         renderer.setSize(window.innerWidth, window.innerHeight)
-        renderer.setPixelRatio(1.2);
+        renderer.setPixelRatio(window.devicePixelRatio);
         // renderer.shadowMap.enabled = true // 开启阴影
         // renderer.shadowMap.type = THREE.PCFSoftShadowMap // 设置阴影类型
         mountRef.current.appendChild(renderer.domElement)

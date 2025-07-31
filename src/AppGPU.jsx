@@ -9,6 +9,9 @@ import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass.js";
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import {DRACOLoader} from "three/examples/jsm/loaders/DRACOLoader.js";
+import {PostProcessing, WebGPURenderer} from "three/src/Three.WebGPU.js";
+import { pass } from 'three/tsl';
+import { bloom } from 'three/addons/tsl/display/BloomNode';
 
 function App() {
 
@@ -63,12 +66,8 @@ function App() {
         camera.current.lookAt(0, 0, 0)
 
         // 渲染器设置
-        const renderer = new THREE.WebGLRenderer(
-            {
-                antialias: true,      // 抗锯齿
-                precision: 'highp',   // 着色器精度
-                powerPreference: 'high-performance' // GPU性能模式（default/high-performance/low-power）
-            }
+        const renderer = new WebGPURenderer(
+
         )
         renderer.setSize(window.innerWidth, window.innerHeight)
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -151,10 +150,10 @@ function App() {
                                     if (carMainItem.material){
                                         // carMainItem.material.color = "#FFFFFF"
                                         // carMainItem.material.alphaToCoverage  = true
-                                    // if (carMainItem.material){
+                                        // if (carMainItem.material){
                                         carMainItem.material.alphaToCoverage  = true
                                         carMainItem.material.clippingPlanes = [plane1]
-                                    //     carMainItem.material.alphaToCoverage  = true
+                                        //     carMainItem.material.alphaToCoverage  = true
                                         carEffect.push(carMainItem)
                                     }
                                 })
@@ -200,7 +199,7 @@ function App() {
                     }
 
                     if (child.name === "ground_shader") {
-                        child.material.map.anisotropy = 8 // 设置抗锯齿 // 
+                        child.material.map.anisotropy = 8 // 设置抗锯齿 //
                     }
 
                     if (child.name === "flyline") {  // 控制流光
@@ -278,19 +277,33 @@ function App() {
             }
         )
 
-
         const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024);
         const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget)
         scene.add(cubeCamera)
 
-        let effectComposer;
+        // let effectComposer;
+        let postProcessing;
 
         function initEffect() {
-            effectComposer = new EffectComposer(renderer);
-            const unrealBloomPass = new UnrealBloomPass(new THREE.Vector2(window.width, window.height), 0.3, 0.1, 0.1)
-            let renderPass = new RenderPass(scene, camera.current);
-            effectComposer.addPass(renderPass)
-            effectComposer.addPass(unrealBloomPass)
+
+            // postProcessing = new PostProcessing( renderer );
+            //
+            // const scenePass = pass( scene, camera.current );
+            // const scenePassColor = scenePass.getTextureNode( 'output' );
+            //
+            // const bloomPass = bloom( scenePassColor );
+            //
+            // postProcessing.outputNode = scenePassColor.add( bloomPass );
+
+
+            // effectComposer = new EffectComposer(renderer);
+            // 实参类型 WebGPURenderer 不可分配给形参类型 WebGLRenderer
+            // const unrealBloomPass = new UnrealBloomPass(new THREE.Vector2(window.width, window.height), 0.3, 0.1, 0.1)
+            // let renderPass = new RenderPass(scene, camera.current);
+            // effectComposer.addPass(renderPass)
+            // effectComposer.addPass(unrealBloomPass)
+
+
         }
 
         initEffect()
@@ -308,7 +321,7 @@ function App() {
                 cubeCamera.position.copy(camera.current.position)
                 cubeCamera.position.y = -cubeCamera.position.y // 设置反射立方体相机位置
                 cubeCamera.update(renderer, scene)
-                   // 恢复地面可见性
+                // 恢复地面可见性
 
                 if (userMouseDown.current && userSwitchRef.current=== 3){
                     cardItemObj.current['groundFunc4'].visible = true
@@ -345,8 +358,8 @@ function App() {
                 });
             }
 
-            // renderer.render(scene, camera)
-            effectComposer.render()
+            renderer.render(scene, camera.current)
+            // postProcessing.render()
             requestAnimationFrame(animate)
         }
 
@@ -457,7 +470,7 @@ function App() {
 
             // 清理 Three.js 资源
             // controls.dispose() // 暂时禁用
-            renderer.dispose()
+            // renderer.dispose()
 
             // 使用局部变量避免 ref 值改变的问题
             const currentMount = mountRef.current
@@ -471,7 +484,7 @@ function App() {
 
 
     function endAni() {
-       if (!modelLoaded.current) return
+        if (!modelLoaded.current) return
 
         gsap.to(camera.current, {
             fov: 75,
@@ -849,8 +862,8 @@ function App() {
 
 
 
-           // cardItemObj.current['su7'].visible = false
-           // cardItemObj.current['luntaiqian'].visible = false
+            // cardItemObj.current['su7'].visible = false
+            // cardItemObj.current['luntaiqian'].visible = false
 
 
 
@@ -899,18 +912,18 @@ function App() {
 
             othercar1.userData["positionToTwen"] = gsap.to(othercar1.position,
                 {
-                z:30,
-                duration:10,
-                repeat:-1,
-                ease:"none"
-            })
+                    z:30,
+                    duration:10,
+                    repeat:-1,
+                    ease:"none"
+                })
             othercar2.userData["positionToTwen"] = gsap.to(othercar2.position,
                 {
-                z:-30,
-                duration:5,
-                repeat:-1,
-                ease:"none"
-            })
+                    z:-30,
+                    duration:5,
+                    repeat:-1,
+                    ease:"none"
+                })
 
 
 
@@ -1124,36 +1137,36 @@ function App() {
                 <div className="flex items-center justify-end h-full ">
                     <div className="flex-row p-6">
                         <div className="block select-none"
-                        style={
-                            userSwitchState===0?{
-                            color:"#ffffff"
-                        }:{
-                            color:"#888888"
-                        }}
+                             style={
+                                 userSwitchState===0?{
+                                     color:"#ffffff"
+                                 }:{
+                                     color:"#888888"
+                                 }}
                              onClick={runCar}>
                             驾驶
                         </div>
                         <div className="block select-none pt-12 "
 
-                                style={
-                                    userSwitchState===1?{
-                                        color:"#ffffff"
-                                    }:{
-                                        color:"#888888"
-                                    }}
+                             style={
+                                 userSwitchState===1?{
+                                     color:"#ffffff"
+                                 }:{
+                                     color:"#888888"
+                                 }}
 
-                                onClick={lengthCar}>
+                             onClick={lengthCar}>
                             车身
                         </div>
                         <div className="block select-none pt-12"
-                                style={
-                                    userSwitchState===2?{
-                                        color:"#ffffff"
-                                    }:{
-                                        color:"#888888"
-                                    }}
+                             style={
+                                 userSwitchState===2?{
+                                     color:"#ffffff"
+                                 }:{
+                                     color:"#888888"
+                                 }}
 
-                                onClick={tailwindCar}>
+                             onClick={tailwindCar}>
                             风阻
                         </div>
                         <div
